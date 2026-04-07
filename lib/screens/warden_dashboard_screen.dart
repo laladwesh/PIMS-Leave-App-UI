@@ -3,11 +3,10 @@
 import 'package:flutter/material.dart';
 import '../models/data_models.dart';
 import '../services/warden_service.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'leave_details_screen.dart';
+import '../config/app_config.dart';
 
 class WardenDashboardScreen extends StatefulWidget {
   const WardenDashboardScreen({super.key});
@@ -32,7 +31,7 @@ class _WardenDashboardScreenState extends State<WardenDashboardScreen> {
   void initState() {
     super.initState();
     _wardenService = WardenService(
-      baseUrl: 'https://college-leave-backend.onrender.com/api',
+      baseUrl: AppConfig.kBaseUrl,
     );
     _loadWardenInfo();
     _loadLeaveRequests();
@@ -304,6 +303,8 @@ class _WardenDashboardScreenState extends State<WardenDashboardScreen> {
               Text(request.reason, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text('Student: ${request.studentName}', style: const TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text('Batch: ${request.studentBatch}', style: const TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
               Text(
                 'From: ${_formatDate(request.startDate)} To: ${_formatDate(request.endDate)}',

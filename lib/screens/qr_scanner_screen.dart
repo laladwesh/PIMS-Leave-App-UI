@@ -7,9 +7,10 @@ import 'dart:developer' as dev;
 
 class QrScannerScreen extends StatefulWidget {
   final Function(String) onQrCodeScanned;
-  final String tab; 
+  final String tab;
 
-  const QrScannerScreen({super.key, required this.onQrCodeScanned, required this.tab});
+  const QrScannerScreen(
+      {super.key, required this.onQrCodeScanned, required this.tab});
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -37,7 +38,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Camera permission is required to scan QR codes.')),
+        const SnackBar(
+            content: Text('Camera permission is required to scan QR codes.')),
       );
       Navigator.pop(context);
     }
@@ -91,9 +93,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _handleQrCodeForDeparture(String qrData) async {
     try {
-      final data = qrData.split('|'); // Expecting "name|reason|leaveId"
-      if (data.length != 3) throw Exception('Invalid QR code format');
+      final data =
+          qrData.split('|');
       final leaveId = data[2].trim();
+      final batch = data.length > 3 ? data[3] : 'N/A';
       dev.log('Extracted Leave ID: $leaveId');
 
       final decision = await showDialog<String>(
@@ -106,6 +109,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               Text('Name: ${data[0]}'),
               Text('Reason: ${data[1]}'),
               Text('Leave ID: $leaveId'),
+              Text('Batch: $batch'),
             ],
           ),
           actions: [
@@ -150,8 +154,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _handleQrCodeForReturn(String qrData) async {
     try {
-      final data = qrData.split('|'); // Expecting "name|reason|leaveId"
-      if (data.length != 3) throw Exception('Invalid QR code format');
+      final data =
+          qrData.split('|'); // Expecting "name|reason|leaveId" or with "batch"
+      if (data.length < 3) throw Exception('Invalid QR code format');
       final leaveId = data[2].trim();
       dev.log('Extracted Leave ID: $leaveId');
 
@@ -280,7 +285,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                         ],
                       ),
                       child: const Center(
-                        child: Icon(Icons.qr_code_scanner, size: 48, color: Colors.white),
+                        child: Icon(Icons.qr_code_scanner,
+                            size: 48, color: Colors.white),
                       ),
                     ),
                   ),
@@ -349,8 +355,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Scan Again'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
                   ),
                   onPressed: () {
                     _startScanning();
@@ -367,7 +375,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     opacity: _centerMessage != null ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 300),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 20),
                       decoration: BoxDecoration(
                         color: Colors.black87,
                         borderRadius: BorderRadius.circular(16),
@@ -407,7 +416,6 @@ class _ScannerOverlayPainter extends CustomPainter {
 
     // Draw dark overlay
     canvas.drawRect(Rect.fromLTWH(0, 0, width, height), paint);
-
 
     // Draw white border for scan area
     paint

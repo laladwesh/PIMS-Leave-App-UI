@@ -131,6 +131,7 @@ class _LeaveInfoCard extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildInfoRow("Student", qrInfo['studentName']),
+            _buildInfoRow("Batch", qrInfo['studentBatch'].toString()),
             _buildInfoRow("Email", qrInfo['email']),
             _buildInfoRow("ID", qrInfo['studentId']),
             _buildInfoRow("Leave ID", qrInfo['leaveId']),

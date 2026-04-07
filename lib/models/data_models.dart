@@ -1,4 +1,6 @@
 // ParentSub model for User.parents
+import 'dart:ffi';
+
 class ParentSub {
   final String name;
   final String email;
@@ -83,7 +85,8 @@ enum UserRole {
 class LeaveRequest {
   final String id;
   final String studentId;
-  final String studentName; // <-- Add this line
+  final String studentName;
+  final int studentBatch;
   final String reason;
   final DateTime startDate;
   final DateTime endDate;
@@ -100,7 +103,8 @@ class LeaveRequest {
   LeaveRequest({
     required this.id,
     required this.studentId,
-    required this.studentName, // <-- Add this line
+    required this.studentName,
+    required this.studentBatch,
     required this.reason,
     required this.startDate,
     required this.endDate,
@@ -120,6 +124,7 @@ class LeaveRequest {
       id: json['_id'] ?? '',
       studentId: json['student']?['_id'] ?? json['student'] ?? '',
       studentName: json['student']?['name'] ?? '', // <-- Add this line
+      studentBatch: json['student']?['batch'] ?? 0, // <-- Add this line
       reason: json['reason'] ?? '',
       startDate: DateTime.parse(json['startDate']),
       endDate: DateTime.parse(json['endDate']),

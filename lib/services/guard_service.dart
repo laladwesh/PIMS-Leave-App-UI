@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as dev;
+import '../config/app_config.dart';
 
 class GuardService {
-  static const String baseUrl = 'https://college-leave-backend.onrender.com/api/guard';
+  static String get baseUrl => '${AppConfig.kBaseUrl}/guard';
 
   // 1. List Departed Students Awaiting Return
   static Future<Map<String, dynamic>> getDepartedAwaitingReturn(String jwtToken) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import '../config/app_config.dart';
 
 class LeaveDetailsScreen extends StatefulWidget {
   final Map<String, dynamic>? rawJson;
@@ -33,8 +34,7 @@ class _LeaveDetailsScreenState extends State<LeaveDetailsScreen> {
     });
     try {
       setState(() {
-        previewUrl =
-            'https://college-leave-backend.onrender.com/api/drive/$docUrl';
+        previewUrl = '${AppConfig.kBaseUrl}/drive/$docUrl';
         loadingPreview = false;
       });
     } catch (e) {

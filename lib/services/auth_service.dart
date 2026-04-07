@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as dev;
+import '../config/app_config.dart';
 
 class AuthService {
-  static const String baseUrl = 'https://college-leave-backend.onrender.com/api'; // <-- update this line
+  static String get baseUrl => AppConfig.kBaseUrl;
 
   Future<Map<String, dynamic>> verifyGoogleUser({required String email, required String role}) async {
     final url = Uri.parse('$baseUrl/auth/verify-google-user');

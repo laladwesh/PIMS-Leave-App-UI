@@ -3,8 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/data_models.dart';
 import 'dart:developer' as dev;
+import '../config/app_config.dart';
 
-const String leaveApiUrl = 'https://college-leave-backend.onrender.com/api/leave';
+String get leaveApiUrl => '${AppConfig.kBaseUrl}/leave';
 
 class LeaveService {
   // Fetch all leave requests (with token)

@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/data_models.dart';
 import 'dart:developer' as dev;
+import '../config/app_config.dart';
 
-const String parentApiUrl = 'https://college-leave-backend.onrender.com/api/parent/applications';
-const String parentWardsApiUrl = 'https://college-leave-backend.onrender.com/api/parent/ward';
-const String parentDecisionApiUrl = 'https://college-leave-backend.onrender.com/api/parent/decision/json';
-const String parentConcernsApiUrl = 'https://college-leave-backend.onrender.com/api/parent/concerns';
+String get parentApiUrl => '${AppConfig.kBaseUrl}/parent/applications';
+String get parentWardsApiUrl => '${AppConfig.kBaseUrl}/parent/ward';
+String get parentDecisionApiUrl => '${AppConfig.kBaseUrl}/parent/decision/json';
+String get parentConcernsApiUrl => '${AppConfig.kBaseUrl}/parent/concerns';
 
 class ParentService {
   static Future<List<LeaveRequest>> fetchApplications({required String token}) async {

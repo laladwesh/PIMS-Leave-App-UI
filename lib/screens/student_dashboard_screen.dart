@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/leave_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'leave_details_screen.dart';
-import '../services/auth_service.dart';
 import 'package:flutter/services.dart';
 import 'notifications_screen.dart';
 import 'dart:developer' as dev;
@@ -406,6 +405,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -425,6 +425,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
               const Divider(height: 24),
+              Text('Batch: ${request.studentBatch}', style: const TextStyle(fontWeight: FontWeight.w500)),
               _buildStatusTimeline(request),
               if (isQRClickable)
                 Padding(
@@ -569,7 +570,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   }
 
   void _showQRCode(LeaveRequest approvedLeave) {
-    final qrData = '${_studentName}|${approvedLeave.reason}|${approvedLeave.id}';
+    final qrData = '${_studentName}|${approvedLeave.reason}|${approvedLeave.id}|${approvedLeave.studentBatch}';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

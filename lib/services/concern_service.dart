@@ -3,9 +3,10 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as dev;
+import '../config/app_config.dart';
 
 class ConcernService {
-  static const String baseUrl = 'https://college-leave-backend.onrender.com/api/guard';
+  static String get baseUrl => '${AppConfig.kBaseUrl}/guard';
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();

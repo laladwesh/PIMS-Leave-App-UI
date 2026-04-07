@@ -157,8 +157,8 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
   Future<void> _handleQrCodeForDeparture(String qrData) async {
     if (jwtToken == null) return;
     try {
-      final data = qrData.split('|'); // Expecting "name|reason|leaveId"
-      if (data.length != 3) throw Exception('Invalid QR code format');
+      final data = qrData.split('|'); 
+      if (data.length != 4) throw Exception('Invalid QR code format');
       final leaveId = data[2];
 
       final decision = await showDialog<String>(
@@ -171,6 +171,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
               Text('Name: ${data[0]}'),
               Text('Reason: ${data[1]}'),
               Text('Leave ID: $leaveId'),
+              Text('Batch: ${data[3]}'),
             ],
           ),
           actions: [
@@ -551,24 +552,51 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                                                                   Colors.purple
                                                                       .shade100,
                                                               child: Icon(
-                                                                  Icons.person,
-                                                                  color: Colors
-                                                                      .purple
-                                                                      .shade700),
+                                                                Icons.person,
+                                                                color: Colors
+                                                                    .purple
+                                                                    .shade700,
+                                                              ),
                                                             ),
                                                             const SizedBox(
                                                                 width: 12),
                                                             Expanded(
-                                                              child: Text(
-                                                                app['student']?[
-                                                                        'name'] ??
-                                                                    'Unknown',
-                                                                style: const TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    fontSize:
-                                                                        16),
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .start,
+                                                                children: [
+                                                                  Text(
+                                                                    app['student']
+                                                                            ?[
+                                                                            'name'] ??
+                                                                        'Unknown',
+                                                                    style:
+                                                                        const TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      fontSize:
+                                                                          16,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      height:
+                                                                          4), // Adds a small vertical space
+                                                                  Text(
+                                                                    'Batch: ${app['student']?['batch'] ?? 'Unknown'}',
+                                                                    style:
+                                                                        const TextStyle(
+                                                                      color: Color.fromARGB(
+                                                                          255,
+                                                                          43,
+                                                                          42,
+                                                                          42),
+                                                                      fontSize:
+                                                                          14,
+                                                                    ),
+                                                                  ),
+                                                                ],
                                                               ),
                                                             ),
                                                             Chip(
@@ -718,8 +746,11 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                                                                           mode:
                                                                               LaunchMode.externalApplication);
                                                                     } else {
-                                                                      if (!mounted) return;
-                                                                      ScaffoldMessenger.of(context).showSnackBar(  
+                                                                      if (!mounted)
+                                                                        return;
+                                                                      ScaffoldMessenger.of(
+                                                                              context)
+                                                                          .showSnackBar(
                                                                         const SnackBar(
                                                                           content:
                                                                               Text('Could not open document'),
@@ -1015,8 +1046,18 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                                     child: ListTile(
                                       title: Text(leave['student']?['name'] ??
                                           'Unknown'),
-                                      subtitle: Text(
-                                          'Left at: ${_formatDateTime(leave['guardStatus']?['decidedAt'])}'),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Batch: ${leave['student']?['batch'] ?? 'Unknown'}',
+                                          ),
+                                          Text(
+                                            'Left at: ${_formatDateTime(leave['guardStatus']?['decidedAt'])}',
+                                          ),
+                                        ],
+                                      ),
                                       trailing: ElevatedButton(
                                         onPressed: () => _handleMarkReturn(
                                             leave['_id'].toString()),

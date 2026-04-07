@@ -11,10 +11,11 @@ plugins {
 
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    implementation "androidx.activity:activity-ktx:1.9.3"
 }
 android {
     namespace = "com.pims.pims_app"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -32,10 +33,10 @@ android {
         applicationId = "com.pims.pims_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23
-        targetSdk = 35
-        versionCode = 8
-        versionName = "1.0.3"
+        minSdkVersion flutter.minSdkVersion
+        targetSdk = 36
+        versionCode = 13
+        versionName = "1.1.1"
     }
 
     def keystorePropertiesFile = rootProject.file("key.properties")
@@ -55,12 +56,13 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now,
-            // so `flutter run --release` works.
-          
-            signingConfig = signingConfigs.release
-            // signingConfig = signingConfigs.debug
+            signingConfig = signingConfigs.getByName("release")
+            minifyEnabled false
+            shrinkResources false  // Must be disabled when minification is off
+            proguardFiles(
+                getDefaultProguardFile("proguard-android.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

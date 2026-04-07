@@ -3,9 +3,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/data_models.dart';
 import 'dart:developer' as dev;
+import '../config/app_config.dart';
 
 class NotificationService {
-  static const String _apiUrl = 'https://college-leave-backend.onrender.com/api/notifications';
+  static String get _apiUrl => '${AppConfig.kBaseUrl}/notifications';
 
   // Get all notifications for the logged-in user (requires bearer token)
   Future<List<AppNotification>> getNotifications(String token) async {
