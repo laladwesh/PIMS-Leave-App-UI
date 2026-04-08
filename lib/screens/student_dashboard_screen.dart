@@ -91,71 +91,18 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.indigo.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          foregroundColor: Colors.white,
-          title: Text(_selectedTab == 0 ? 'Student Dashboard' : 'My Applications'),
-          centerTitle: true,
-          automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const NotificationsScreen()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () async {
-                final shouldLogout = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Confirm Logout'),
-                    content: const Text('Are you sure you want to logout?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: const Text('Logout'),
-                      ),
-                    ],
-                  ),
-                );
-                if (shouldLogout == true) {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.clear();
-                  try {
-                    await GoogleSignIn().signOut();
-                  } catch (_) {}
-                  if (!mounted) return;
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/role-selection',
-                    (route) => false,
-                  );
-                }
-              },
+        body: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _selectedTab == 0
+                      ? _buildDashboardTab()
+                      : _buildApplicationsTab(),
             ),
           ],
         ),
-        body: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _selectedTab == 0 ? _buildDashboardTab() : _buildApplicationsTab(),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedTab,
           onTap: (idx) {
@@ -177,6 +124,86 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               label: 'Applications',
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade400, Colors.indigo.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: kToolbarHeight,
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  _selectedTab == 0 ? 'Student Dashboard' : 'My Applications',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined,
+                    color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const NotificationsScreen()),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () async {
+                  final shouldLogout = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirm Logout'),
+                      content: const Text('Are you sure you want to logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Logout'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (shouldLogout == true) {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.clear();
+                    try {
+                      await GoogleSignIn().signOut();
+                    } catch (_) {}
+                    if (!mounted) return;
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/role-selection',
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -227,7 +254,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           // Action Button
           ElevatedButton.icon(
             onPressed: () async {
-              final result = await Navigator.pushNamed(context, '/request-leave');
+              final result =
+                  await Navigator.pushNamed(context, '/request-leave');
               if (result == true) {
                 _loadLeaveRequests();
               }
@@ -236,17 +264,21 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             label: const Text('Request New Leave'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textStyle:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 24),
 
           // Recent Applications section
-          _buildSectionHeader('Recent Applications', () => setState(() => _selectedTab = 1)),
+          _buildSectionHeader(
+              'Recent Applications', () => setState(() => _selectedTab = 1)),
           if (_leaveRequests.isEmpty)
             _buildEmptyState('No leave requests yet.')
           else
-            ...recentRequests.map((req) => _buildLeaveRequestCard(req)).toList(),
+            ...recentRequests
+                .map((req) => _buildLeaveRequestCard(req))
+                .toList(),
         ],
       ),
     );
@@ -255,10 +287,20 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   Widget _buildApplicationsTab() {
     List<LeaveRequest> filtered = _leaveRequests;
     if (_filterStatus != 'All') {
-       filtered = _leaveRequests.where((leave) {
-        if (_filterStatus == 'Pending') return (leave.wardenStatus.status == 'pending' || leave.parentStatus.status == 'pending') && leave.adminStatus.status != 'rejected' && leave.wardenStatus.status != 'rejected' && leave.parentStatus.status != 'rejected';
-        if (_filterStatus == 'Approved') return leave.wardenStatus.status == 'approved';
-        if (_filterStatus == 'Rejected') return leave.parentStatus.status == 'rejected' || leave.wardenStatus.status == 'rejected' || leave.adminStatus.status == 'rejected' || leave.adminStatus.status == 'stopped';
+      filtered = _leaveRequests.where((leave) {
+        if (_filterStatus == 'Pending')
+          return (leave.wardenStatus.status == 'pending' ||
+                  leave.parentStatus.status == 'pending') &&
+              leave.adminStatus.status != 'rejected' &&
+              leave.wardenStatus.status != 'rejected' &&
+              leave.parentStatus.status != 'rejected';
+        if (_filterStatus == 'Approved')
+          return leave.wardenStatus.status == 'approved';
+        if (_filterStatus == 'Rejected')
+          return leave.parentStatus.status == 'rejected' ||
+              leave.wardenStatus.status == 'rejected' ||
+              leave.adminStatus.status == 'rejected' ||
+              leave.adminStatus.status == 'stopped';
         return true;
       }).toList();
     }
@@ -303,7 +345,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   ? _buildEmptyState('No $_filterStatus applications found.')
                   : ListView.builder(
                       itemCount: filtered.length,
-                      itemBuilder: (context, index) => _buildLeaveRequestCard(filtered[index]),
+                      itemBuilder: (context, index) =>
+                          _buildLeaveRequestCard(filtered[index]),
                     ),
             ),
           ),
@@ -325,7 +368,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       statusText = 'Stopped by Admin';
     } else if (warden == 'rejected' || parent == 'rejected') {
       statusColor = Colors.red;
-      statusText = warden == 'rejected' ? 'Rejected by Warden' : 'Rejected by Parent';
+      statusText =
+          warden == 'rejected' ? 'Rejected by Warden' : 'Rejected by Parent';
     } else if (warden == 'approved') {
       statusColor = Colors.green;
       statusText = 'Approved';
@@ -337,7 +381,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       statusText = 'Pending Parent Approval';
     }
 
-    final isQRClickable = warden == 'approved' && admin != 'stopped' && request.returnDateTime == null;
+    final isQRClickable = warden == 'approved' &&
+        admin != 'stopped' &&
+        request.returnDateTime == null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -352,7 +398,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(child: CircularProgressIndicator()),
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
             final leaveService = LeaveService();
             final rawJson = await leaveService.fetchLeaveById(
@@ -401,20 +448,24 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   Expanded(
                     child: Text(
                       request.reason,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       statusText,
-                      style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: statusColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -425,7 +476,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
               const Divider(height: 24),
-              Text('Batch: ${request.studentBatch}', style: const TextStyle(fontWeight: FontWeight.w500)),
+              Text('Batch: ${request.studentBatch}',
+                  style: const TextStyle(fontWeight: FontWeight.w500)),
               _buildStatusTimeline(request),
               if (isQRClickable)
                 Padding(
@@ -435,7 +487,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                       onPressed: () => _showQRCode(request),
                       icon: const Icon(Icons.qr_code_2),
                       label: const Text('Show My QR Code'),
-                       style: ElevatedButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
                         foregroundColor: Colors.white,
                       ),
@@ -448,7 +500,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       ),
     );
   }
-  
+
   // Helper Widgets
   Widget _buildSectionHeader(String title, VoidCallback onViewAll) {
     return Padding(
@@ -494,7 +546,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       {'label': 'Parent', 'status': leave.parentStatus.status},
       {'label': 'Warden', 'status': leave.wardenStatus.status},
       {'label': 'Guard', 'status': leave.guardStatus.status},
-      {'label': 'Return', 'status': leave.returnDateTime != null ? 'approved' : 'pending'},
+      {
+        'label': 'Return',
+        'status': leave.returnDateTime != null ? 'approved' : 'pending'
+      },
     ];
 
     // Determine the current active stage
@@ -505,13 +560,17 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     if (leave.returnDateTime != null) activeStage = 4;
 
     // Check for rejection at any stage
-    if (leave.parentStatus.status == 'rejected' || leave.wardenStatus.status == 'rejected' || leave.adminStatus.status == 'rejected' || leave.adminStatus.status == 'stopped') {
-       activeStage = stages.indexWhere((s) => s['status'] == 'rejected' || s['status'] == 'stopped');
-       if (activeStage == -1) { // If admin rejected
-         activeStage = 1;
-       }
+    if (leave.parentStatus.status == 'rejected' ||
+        leave.wardenStatus.status == 'rejected' ||
+        leave.adminStatus.status == 'rejected' ||
+        leave.adminStatus.status == 'stopped') {
+      activeStage = stages.indexWhere(
+          (s) => s['status'] == 'rejected' || s['status'] == 'stopped');
+      if (activeStage == -1) {
+        // If admin rejected
+        activeStage = 1;
+      }
     }
-
 
     List<Widget> timelineWidgets = [];
     for (int i = 0; i < stages.length; i++) {
@@ -553,7 +612,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           Expanded(
             child: Container(
               height: 2,
-              color: i < activeStage -1 ? Colors.green : Colors.grey.shade300,
+              color: i < activeStage - 1 ? Colors.green : Colors.grey.shade300,
             ),
           ),
         );
@@ -570,7 +629,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   }
 
   void _showQRCode(LeaveRequest approvedLeave) {
-    final qrData = '${_studentName}|${approvedLeave.reason}|${approvedLeave.id}|${approvedLeave.studentBatch}';
+    final qrData =
+        '${_studentName}|${approvedLeave.reason}|${approvedLeave.id}|${approvedLeave.studentBatch}';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

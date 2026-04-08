@@ -71,7 +71,6 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -91,83 +90,16 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.shade400, Colors.green.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          foregroundColor: Colors.white,
-          title: const Text('Parent Dashboard'),
-          centerTitle: true,
-          automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const NotificationsScreen()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.account_circle_outlined),
-              onPressed: () {
-                Navigator.pushNamed(context, '/parent-profile');
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () async {
-                final shouldLogout = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Confirm Logout'),
-                    content: const Text('Are you sure you want to logout?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: const Text('Logout'),
-                      ),
-                    ],
-                  ),
-                );
-                if (shouldLogout == true) {
-                  final prefs = await SharedPreferences.getInstance();
-                  final fcmToken = prefs.getString('fcm_token');
-                  if (fcmToken != null && fcmToken.isNotEmpty) {
-                    try {
-                      await AuthService().deleteFcmToken(fcmToken: fcmToken);
-                    } catch (_) {}
-                  }
-                  await prefs.clear();
-                  try {
-                    await GoogleSignIn().signOut();
-                  } catch (_) {}
-                  if (!mounted) return;
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/role-selection',
-                    (route) => false,
-                  );
-                }
-              },
+        body: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildTabContent(),
             ),
           ],
         ),
-        body: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _buildTabContent(),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedTab,
           onTap: (idx) => setState(() => _selectedTab = idx),
@@ -182,7 +114,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.list_alt_outlined),
-               activeIcon: Icon(Icons.list_alt),
+              activeIcon: Icon(Icons.list_alt),
               label: 'Applications',
             ),
             BottomNavigationBarItem(
@@ -191,6 +123,99 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               label: 'Concerns',
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.teal.shade400, Colors.green.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: kToolbarHeight,
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'Parent Dashboard',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined,
+                    color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const NotificationsScreen()),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.account_circle_outlined,
+                    color: Colors.white),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/parent-profile');
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () async {
+                  final shouldLogout = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirm Logout'),
+                      content: const Text('Are you sure you want to logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Logout'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (shouldLogout == true) {
+                    final prefs = await SharedPreferences.getInstance();
+                    final fcmToken = prefs.getString('fcm_token');
+                    if (fcmToken != null && fcmToken.isNotEmpty) {
+                      try {
+                        await AuthService().deleteFcmToken(fcmToken: fcmToken);
+                      } catch (_) {}
+                    }
+                    await prefs.clear();
+                    try {
+                      await GoogleSignIn().signOut();
+                    } catch (_) {}
+                    if (!mounted) return;
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/role-selection',
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -212,8 +237,10 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildDashboardTab() {
     final recentRequests = _leaveRequests.take(2).toList();
     final recentConcerns = _wardConcerns.take(2).toList();
-    final pendingCount = _leaveRequests.where((r) => r.parentStatus.status == 'pending').length;
-    final approvedCount = _leaveRequests.where((r) => r.parentStatus.status == 'approved').length;
+    final pendingCount =
+        _leaveRequests.where((r) => r.parentStatus.status == 'pending').length;
+    final approvedCount =
+        _leaveRequests.where((r) => r.parentStatus.status == 'approved').length;
 
     return RefreshIndicator(
       onRefresh: _fetchData,
@@ -244,7 +271,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                 Text(
+                Text(
                   _userEmail ?? '',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
@@ -258,17 +285,33 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           // Stat Cards
           Row(
             children: [
-              Expanded(child: _buildStatCard('Pending Actions', pendingCount.toString(), Icons.pending_actions, Colors.orange)),
+              Expanded(
+                  child: _buildStatCard(
+                      'Pending Actions',
+                      pendingCount.toString(),
+                      Icons.pending_actions,
+                      Colors.orange)),
               const SizedBox(width: 12),
-              Expanded(child: _buildStatCard('Approved Leaves', approvedCount.toString(), Icons.check_circle, Colors.blue)),
+              Expanded(
+                  child: _buildStatCard(
+                      'Approved Leaves',
+                      approvedCount.toString(),
+                      Icons.check_circle,
+                      Colors.blue)),
               const SizedBox(width: 12),
-              Expanded(child: _buildStatCard('Total Concerns', _wardConcerns.length.toString(), Icons.report, Colors.red)),
+              Expanded(
+                  child: _buildStatCard(
+                      'Total Concerns',
+                      _wardConcerns.length.toString(),
+                      Icons.report,
+                      Colors.red)),
             ],
           ),
           const SizedBox(height: 24),
 
           // Recent Applications section
-          _buildSectionHeader('Recent Applications', () => setState(() => _selectedTab = 1)),
+          _buildSectionHeader(
+              'Recent Applications', () => setState(() => _selectedTab = 1)),
           if (recentRequests.isEmpty)
             _buildEmptyState('No recent leave applications.')
           else
@@ -277,7 +320,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           const SizedBox(height: 24),
 
           // Ward Concerns section
-          _buildSectionHeader('Recent Ward Concerns', () => setState(() => _selectedTab = 2)),
+          _buildSectionHeader(
+              'Recent Ward Concerns', () => setState(() => _selectedTab = 2)),
           if (recentConcerns.isEmpty)
             _buildEmptyState('No recent concerns reported.')
           else
@@ -290,7 +334,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildAllApplicationsTab() {
     List<LeaveRequest> filteredRequests = _leaveRequests;
     if (_filterOption != 'All') {
-      filteredRequests = _leaveRequests.where((r) => r.parentStatus.status == _filterOption.toLowerCase()).toList();
+      filteredRequests = _leaveRequests
+          .where((r) => r.parentStatus.status == _filterOption.toLowerCase())
+          .toList();
     }
 
     return Padding(
@@ -331,7 +377,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   ? _buildEmptyState('No $_filterOption applications found.')
                   : ListView.builder(
                       itemCount: filteredRequests.length,
-                      itemBuilder: (context, index) => _buildLeaveRequestCard(filteredRequests[index]),
+                      itemBuilder: (context, index) =>
+                          _buildLeaveRequestCard(filteredRequests[index]),
                     ),
             ),
           ),
@@ -360,7 +407,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   ? _buildEmptyState('No concerns reported yet.')
                   : ListView.builder(
                       itemCount: _wardConcerns.length,
-                      itemBuilder: (context, index) => _buildConcernCard(_wardConcerns[index]),
+                      itemBuilder: (context, index) =>
+                          _buildConcernCard(_wardConcerns[index]),
                     ),
             ),
           ),
@@ -402,7 +450,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           if (_token == null || (request.id).isEmpty) return;
           try {
             if (!mounted) return;
-            dev.log('[ParentDashboard] Fetching leave details for id: ${request.id}');
+            dev.log(
+                '[ParentDashboard] Fetching leave details for id: ${request.id}');
             dev.log('[ParentDashboard] Using token: $_token');
             showDialog(
               context: context,
@@ -415,7 +464,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               token: _token!,
               leaveId: request.id,
             );
-            dev.log('[ParentDashboard] API response for leave details: $rawJson');
+            dev.log(
+                '[ParentDashboard] API response for leave details: $rawJson');
             if (!mounted) return;
             Navigator.pop(context); // Remove loading dialog
             Navigator.push(
@@ -460,30 +510,37 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                   Expanded(
                     child: Text(
                       request.reason,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       statusText,
-                      style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: statusColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
               ),
               const Divider(height: 20),
-              _buildInfoRow(Icons.person_outline, 'Student: ${request.studentName}'),
+              _buildInfoRow(
+                  Icons.person_outline, 'Student: ${request.studentName}'),
               const SizedBox(height: 4),
-              _buildInfoRow(Icons.calendar_today_outlined, 'From: ${_formatDate(request.startDate)} To: ${_formatDate(request.endDate)}'),
+              _buildInfoRow(Icons.calendar_today_outlined,
+                  'From: ${_formatDate(request.startDate)} To: ${_formatDate(request.endDate)}'),
               const SizedBox(height: 4),
-              _buildInfoRow(Icons.timer_outlined, 'Duration: ${request.endDate.difference(request.startDate).inDays + 1} day(s)'),
-              
+              _buildInfoRow(Icons.timer_outlined,
+                  'Duration: ${request.endDate.difference(request.startDate).inDays + 1} day(s)'),
               if (showActionButtons)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -537,11 +594,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const Divider(height: 20),
-            _buildInfoRow(Icons.person_outline, 'Student: ${concern['studentName']}'),
+            _buildInfoRow(
+                Icons.person_outline, 'Student: ${concern['studentName']}'),
             const SizedBox(height: 4),
             _buildInfoRow(Icons.group_outlined, 'Batch: ${concern['batch']}'),
             const SizedBox(height: 4),
-             _buildInfoRow(Icons.calendar_today_outlined, 'Created At: ${_formatDate(DateTime.parse(concern['createdAt']))}'),
+            _buildInfoRow(Icons.calendar_today_outlined,
+                'Created At: ${_formatDate(DateTime.parse(concern['createdAt']))}'),
           ],
         ),
       ),
@@ -549,7 +608,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   // Helper Widgets for UI
-  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String count, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -568,7 +628,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         children: [
           Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
-          Text(count, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(count,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         ],
       ),
@@ -617,7 +679,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       children: [
         Icon(icon, size: 16, color: Colors.grey.shade600),
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: TextStyle(color: Colors.grey.shade700))),
+        Expanded(
+            child: Text(text, style: TextStyle(color: Colors.grey.shade700))),
       ],
     );
   }
@@ -635,12 +698,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Are you sure you want to ${isApproval ? 'approve' : 'reject'} this request?'),
+            Text(
+                'Are you sure you want to ${isApproval ? 'approve' : 'reject'} this request?'),
             const SizedBox(height: 16),
             TextField(
               controller: commentController,
               decoration: InputDecoration(
-                labelText: isApproval ? 'Comment (Optional)' : 'Reason for rejection',
+                labelText:
+                    isApproval ? 'Comment (Optional)' : 'Reason for rejection',
                 border: const OutlineInputBorder(),
               ),
               maxLines: 2,
@@ -688,10 +753,11 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         ),
       );
     } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to ${isApproval ? 'approve' : 'reject'} leave request.'),
+          content: Text(
+              'Failed to ${isApproval ? 'approve' : 'reject'} leave request.'),
           backgroundColor: Colors.red,
         ),
       );

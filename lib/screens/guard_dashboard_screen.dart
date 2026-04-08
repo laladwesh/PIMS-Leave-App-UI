@@ -333,85 +333,13 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
         await SystemNavigator.pop();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Guard Dashboard'),
-          backgroundColor: Colors.purple,
-          foregroundColor: Colors.white,
-          automaticallyImplyLeading: false, // <-- Remove default back button
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Logout',
-              onPressed: () async {
-                final shouldLogout = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Confirm Logout'),
-                    content: const Text('Are you sure you want to logout?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: const Text('Logout'),
-                      ),
-                    ],
-                  ),
-                );
-                if (shouldLogout == true) {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.remove('user_email');
-                  await prefs.setBool('isLoggedIn', false);
-                  await prefs.remove('token');
-                  await prefs.remove('role');
-                  await prefs.remove('email');
-                  await prefs.remove('student_name');
-                  try {
-                    await GoogleSignIn().signOut();
-                  } catch (_) {}
-                  if (!mounted) return;
-                  if (mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/role-selection',
-                      (route) => false,
-                    );
-                  }
-                }
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refreshData,
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_alert),
-              tooltip: 'Raise Concern',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const RaiseConcernScreen()),
-                );
-              },
-            ),
-          ],
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            tabs: const [
-              Tab(text: 'Departure'),
-              Tab(text: 'Return'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          controller: _tabController,
+        body: Column(
           children: [
+            _buildHeader(),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
             // Departure Tab
             Padding(
               padding: const EdgeInsets.all(16),
@@ -1080,6 +1008,114 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.purple.shade400, Colors.deepPurple.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: kToolbarHeight,
+              child: Row(
+                children: [
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Guard Dashboard',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    tooltip: 'Logout',
+                    onPressed: () async {
+                      final shouldLogout = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Confirm Logout'),
+                          content: const Text('Are you sure you want to logout?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('Logout'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (shouldLogout == true) {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.remove('user_email');
+                        await prefs.setBool('isLoggedIn', false);
+                        await prefs.remove('token');
+                        await prefs.remove('role');
+                        await prefs.remove('email');
+                        await prefs.remove('student_name');
+                        try {
+                          await GoogleSignIn().signOut();
+                        } catch (_) {}
+                        if (!mounted) return;
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/role-selection',
+                          (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: _refreshData,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_alert, color: Colors.white),
+                    tooltip: 'Raise Concern',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const RaiseConcernScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              tabs: const [
+                Tab(text: 'Departure'),
+                Tab(text: 'Return'),
+              ],
             ),
           ],
         ),
