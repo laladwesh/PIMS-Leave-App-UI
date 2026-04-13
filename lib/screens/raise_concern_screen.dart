@@ -156,14 +156,15 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
       appBar: AppBar(
         title: const Text('Raise Concern'),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+      body: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     const Text(
                       'Raise a Concern',
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -342,6 +343,7 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
                 ),
               ),
             ),
+    ),
     );
   }
 }

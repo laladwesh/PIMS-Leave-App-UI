@@ -188,95 +188,97 @@ class _LoginScreenState extends State<LoginScreen>
     dev.log('Loaded role from prefs: $role');
   }
 
-Future<void> _handleSuccessfulVerification(
-    Map<String, dynamic> verifyResponse,
-    {required String emailForFcm}) async {
-  // 1. Check if the user is authorized by your backend. This part is correct.
-  if (verifyResponse['verified'] != true || verifyResponse['token'] == null) {
-    setState(() {
-      _isLoading = false;
-      _authErrorMessage = 'You are not authorized for this role.';
-      user = null; // Clear user info
-    });
-    await FirebaseAuth.instance.signOut().catchError((_) {});
-    await GoogleSignIn().signOut().catchError((_) {});
-    return;
-  }
-
-  // 2. Save all user data from your backend. This part is also correct.
-  await prefs.setString('token', verifyResponse['token'].toString());
-  await prefs.setString('role', verifyResponse['role'].toString());
-  await prefs.setString('id', verifyResponse['id'].toString());
-  await prefs.setString('gender', verifyResponse['gender'].toString());
-  await prefs.setString('email', verifyResponse['email'].toString());
-  await prefs.setString('name', verifyResponse['name'].toString());
-  dev.log('✅ User data saved to SharedPreferences.');
-
-  // 3. Handle the OPTIONAL notification permission.
-  dev.log('Requesting notification permission...');
-  final settings = await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-  dev.log('Notification permission status: ${settings.authorizationStatus}');
-
-  if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-      settings.authorizationStatus == AuthorizationStatus.provisional) {
-    // User GRANTED permission. Get the token and register it.
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-    dev.log('👍 Obtained FCM token: $fcmToken');
-    if (fcmToken != null) {
-      await prefs.setString('fcm_token', fcmToken);
-      await _authService.registerFcmToken(
-        fcmToken: fcmToken,
-        email: emailForFcm,
-        id: verifyResponse['id'] ?? '',
-        name: prefs.getString('name') ?? '',
-        role: prefs.getString('role') ?? '',
-        gender: prefs.getString('gender'),
-      );
-      dev.log('FCM token registration process initiated.');
+  Future<void> _handleSuccessfulVerification(
+      Map<String, dynamic> verifyResponse,
+      {required String emailForFcm}) async {
+    // 1. Check if the user is authorized by your backend. This part is correct.
+    if (verifyResponse['verified'] != true || verifyResponse['token'] == null) {
+      setState(() {
+        _isLoading = false;
+        _authErrorMessage = 'You are not authorized for this role.';
+        user = null; // Clear user info
+      });
+      await FirebaseAuth.instance.signOut().catchError((_) {});
+      await GoogleSignIn().signOut().catchError((_) {});
+      return;
     }
-  } else {
-    // User DENIED permission. Log it and show a gentle, non-blocking message.
-    dev.log('❌ Notification permission not granted. User can proceed without notifications.');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('For real-time updates, you can enable notifications later in settings.'),
-        ),
-      );
+
+    // 2. Save all user data from your backend. This part is also correct.
+    await prefs.setString('token', verifyResponse['token'].toString());
+    await prefs.setString('role', verifyResponse['role'].toString());
+    await prefs.setString('id', verifyResponse['id'].toString());
+    await prefs.setString('gender', verifyResponse['gender'].toString());
+    await prefs.setString('email', verifyResponse['email'].toString());
+    await prefs.setString('name', verifyResponse['name'].toString());
+    dev.log('✅ User data saved to SharedPreferences.');
+
+    // 3. Handle the OPTIONAL notification permission.
+    dev.log('Requesting notification permission...');
+    final settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    dev.log('Notification permission status: ${settings.authorizationStatus}');
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional) {
+      // User GRANTED permission. Get the token and register it.
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      dev.log('👍 Obtained FCM token: $fcmToken');
+      if (fcmToken != null) {
+        await prefs.setString('fcm_token', fcmToken);
+        await _authService.registerFcmToken(
+          fcmToken: fcmToken,
+          email: emailForFcm,
+          id: verifyResponse['id'] ?? '',
+          name: prefs.getString('name') ?? '',
+          role: prefs.getString('role') ?? '',
+          gender: prefs.getString('gender'),
+        );
+        dev.log('FCM token registration process initiated.');
+      }
+    } else {
+      // User DENIED permission. Log it and show a gentle, non-blocking message.
+      dev.log(
+          '❌ Notification permission not granted. User can proceed without notifications.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'For real-time updates, you can enable notifications later in settings.'),
+          ),
+        );
+      }
+    }
+
+    await prefs.setBool('isLoggedIn', true);
+    dev.log('User login state set to true. Navigating to dashboard...');
+
+    final savedRole = prefs.getString('role') ?? '';
+    if (!mounted) return;
+
+    switch (savedRole) {
+      case 'student':
+        Navigator.of(context).pushReplacementNamed('/student-dashboard');
+        break;
+      case 'parent':
+        Navigator.of(context).pushReplacementNamed('/parent-dashboard');
+        break;
+      case 'warden':
+        Navigator.of(context).pushReplacementNamed('/warden-dashboard');
+        break;
+      case 'guard':
+        Navigator.of(context).pushReplacementNamed('/guard-dashboard');
+        break;
+      default:
+        dev.log('Unknown role: $savedRole');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Unknown role: "$savedRole", please try again.')),
+        );
     }
   }
-
-  await prefs.setBool('isLoggedIn', true);
-  dev.log('User login state set to true. Navigating to dashboard...');
-
-  final savedRole = prefs.getString('role') ?? '';
-  if (!mounted) return;
-
-  switch (savedRole) {
-    case 'student':
-      Navigator.of(context).pushReplacementNamed('/student-dashboard');
-      break;
-    case 'parent':
-      Navigator.of(context).pushReplacementNamed('/parent-dashboard');
-      break;
-    case 'warden':
-      Navigator.of(context).pushReplacementNamed('/warden-dashboard');
-      break;
-    case 'guard':
-      Navigator.of(context).pushReplacementNamed('/guard-dashboard');
-      break;
-    default:
-      dev.log('Unknown role: $savedRole');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Unknown role: "$savedRole", please try again.')),
-      );
-  }
-}
 
   Future<void> signInWithGoogle() async {
     setState(() {
@@ -284,7 +286,15 @@ Future<void> _handleSuccessfulVerification(
       _authErrorMessage = null;
     });
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignIn _googleSignIn = GoogleSignIn(
+        clientId: Platform.isAndroid ? null : "250221986887-qj0n486rv57a4208s8v2bvqorb6q64qm.apps.googleusercontent.com",
+      );
+      
+      // Clear any hung state from Google Play Services before attempting a new sign-in.
+      // This resolves the issue where the app fails to sign in until a device reboot.
+      await _googleSignIn.signOut();
+      
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         setState(() => _isLoading = false);
         return; // User cancelled the sign-in
@@ -316,8 +326,8 @@ Future<void> _handleSuccessfulVerification(
       dev.log('Error signing in with Google: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('An unexpected error occurred. Please try again.')),
+        SnackBar(
+            content: Text('Sign in failed: ${e.toString()}. Please try again.')),
       );
     } finally {
       if (mounted) {

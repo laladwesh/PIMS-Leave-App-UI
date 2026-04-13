@@ -55,13 +55,14 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      body: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Card(
                     elevation: 4,
                     child: ListTile(
@@ -105,6 +106,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                 ],
               ),
             ),
+    ),
     );
   }
 }

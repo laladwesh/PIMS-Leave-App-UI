@@ -15,10 +15,12 @@ class DeletedNotificationsScreen extends StatefulWidget {
   });
 
   @override
-  State<DeletedNotificationsScreen> createState() => _DeletedNotificationsScreenState();
+  State<DeletedNotificationsScreen> createState() =>
+      _DeletedNotificationsScreenState();
 }
 
-class _DeletedNotificationsScreenState extends State<DeletedNotificationsScreen> {
+class _DeletedNotificationsScreenState
+    extends State<DeletedNotificationsScreen> {
   late Future<List<AppNotification>> _deletedNotificationsFuture;
 
   @override
@@ -34,8 +36,10 @@ class _DeletedNotificationsScreenState extends State<DeletedNotificationsScreen>
   }
 
   Future<List<AppNotification>> _fetchDeletedNotifications() async {
-    final allNotifications = await widget.notificationService.getNotifications(widget.token);
-    final deletedIds = await widget.notificationService.getDeletedNotificationIds();
+    final allNotifications =
+        await widget.notificationService.getNotifications(widget.token);
+    final deletedIds =
+        await widget.notificationService.getDeletedNotificationIds();
     return allNotifications.where((n) => deletedIds.contains(n.id)).toList();
   }
 
@@ -71,49 +75,54 @@ class _DeletedNotificationsScreenState extends State<DeletedNotificationsScreen>
       appBar: AppBar(
         title: const Text('Deleted Items'),
       ),
-      body: FutureBuilder<List<AppNotification>>(
-        future: _deletedNotificationsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.delete_sweep_outlined, size: 80, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  const Text('No deleted notifications.', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                ],
-              ),
-            );
-          }
-          final deletedNotifications = snapshot.data!;
-          return ListView.builder(
-            itemCount: deletedNotifications.length,
-            itemBuilder: (context, index) {
-              final n = deletedNotifications[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                elevation: 2,
-                child: ListTile(
-                  title: Text(n.message ?? 'No message content'),
-                  subtitle: Text('Deleted on: ${n.createdAt.toString().substring(0, 10)}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_forever, color: Colors.red),
-                    onPressed: () => _permanentlyDeleteNotification(n),
-                  ),
+      body: SafeArea(
+        child: FutureBuilder<List<AppNotification>>(
+          future: _deletedNotificationsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.delete_sweep_outlined,
+                        size: 80, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    const Text('No deleted notifications.',
+                        style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  ],
                 ),
               );
-            },
-          );
-        },
+            }
+            final deletedNotifications = snapshot.data!;
+            return ListView.builder(
+              itemCount: deletedNotifications.length,
+              itemBuilder: (context, index) {
+                final n = deletedNotifications[index];
+                return Card(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  elevation: 2,
+                  child: ListTile(
+                    title: Text(n.message ?? 'No message content'),
+                    subtitle: Text(
+                        'Deleted on: ${n.createdAt.toString().substring(0, 10)}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_forever, color: Colors.red),
+                      onPressed: () => _permanentlyDeleteNotification(n),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 }
-
 
 class NotificationsScreen extends StatefulWidget {
   final String? token;
@@ -158,10 +167,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<List<AppNotification>> _fetchInboxNotifications() async {
-    final allNotifications = await _notificationService.getNotifications(_token!);
+    final allNotifications =
+        await _notificationService.getNotifications(_token!);
     final deletedIds = await _notificationService.getDeletedNotificationIds();
-    final inbox = allNotifications.where((n) => !deletedIds.contains(n.id)).toList();
-    inbox.sort((a, b) => (b.createdAt as DateTime).compareTo(a.createdAt as DateTime));
+    final inbox =
+        allNotifications.where((n) => !deletedIds.contains(n.id)).toList();
+    inbox.sort(
+        (a, b) => (b.createdAt as DateTime).compareTo(a.createdAt as DateTime));
     return inbox;
   }
 
@@ -173,7 +185,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _deleteSelectedNotifications() async {
     if (_token == null || _selectedIds.isEmpty) return;
-    
+
     final notifications = await _notificationsFuture;
     final toDelete = notifications.where((n) => _selectedIds.contains(n.id));
 
@@ -218,87 +230,100 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               icon: const Icon(Icons.delete_sweep_outlined),
               tooltip: 'View Deleted Items',
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => DeletedNotificationsScreen(
-                      token: _token!,
-                      notificationService: _notificationService,
-                    ),
-                  ),
-                ).then((_) => _refreshNotifications()); // Refresh when returning
+                Navigator.of(context)
+                    .push(
+                      MaterialPageRoute(
+                        builder: (context) => DeletedNotificationsScreen(
+                          token: _token!,
+                          notificationService: _notificationService,
+                        ),
+                      ),
+                    )
+                    .then((_) =>
+                        _refreshNotifications()); // Refresh when returning
               },
             ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshNotifications,
-        child: FutureBuilder<List<AppNotification>>(
-          future: _notificationsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    const Text('Your inbox is empty.', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                  ],
-                ),
-              );
-            }
-            final notifications = snapshot.data!;
-            return ListView.builder(
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                final n = notifications[index];
-                final isSelected = _selectedIds.contains(n.id);
-                final isRead = n.read == true;
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  color: isSelected ? Colors.blue.shade100.withOpacity(0.5) : Colors.white,
-                  child: ListTile(
-                    onTap: () {
-                      if (_selectedIds.isNotEmpty) {
-                        _toggleSelection(n.id);
-                      } else if (!isRead) {
-                        _markAsRead(n.id);
-                      }
-                    },
-                    onLongPress: () {
-                      _toggleSelection(n.id);
-                    },
-                    leading: CircleAvatar(
-                      backgroundColor: isRead ? Colors.grey.shade300 : Theme.of(context).primaryColor,
-                      child: Icon(
-                        isRead ? Icons.done : Icons.notifications,
-                        color: isRead ? Colors.grey.shade700 : Colors.white,
-                      ),
-                    ),
-                    title: Text(
-                      n.message ?? 'No message',
-                      style: TextStyle(
-                        fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${(n.createdAt as DateTime).day}/${(n.createdAt as DateTime).month}/${(n.createdAt as DateTime).year}',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    selected: isSelected,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _refreshNotifications,
+          child: FutureBuilder<List<AppNotification>>(
+            future: _notificationsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.notifications_off_outlined,
+                          size: 80, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      const Text('Your inbox is empty.',
+                          style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    ],
                   ),
                 );
-              },
-            );
-          },
+              }
+              final notifications = snapshot.data!;
+              return ListView.builder(
+                itemCount: notifications.length,
+                itemBuilder: (context, index) {
+                  final n = notifications[index];
+                  final isSelected = _selectedIds.contains(n.id);
+                  final isRead = n.read == true;
+
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    color: isSelected
+                        ? Colors.blue.shade100.withOpacity(0.5)
+                        : Colors.white,
+                    child: ListTile(
+                      onTap: () {
+                        if (_selectedIds.isNotEmpty) {
+                          _toggleSelection(n.id);
+                        } else if (!isRead) {
+                          _markAsRead(n.id);
+                        }
+                      },
+                      onLongPress: () {
+                        _toggleSelection(n.id);
+                      },
+                      leading: CircleAvatar(
+                        backgroundColor: isRead
+                            ? Colors.grey.shade300
+                            : Theme.of(context).primaryColor,
+                        child: Icon(
+                          isRead ? Icons.done : Icons.notifications,
+                          color: isRead ? Colors.grey.shade700 : Colors.white,
+                        ),
+                      ),
+                      title: Text(
+                        n.message ?? 'No message',
+                        style: TextStyle(
+                          fontWeight:
+                              isRead ? FontWeight.normal : FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${(n.createdAt as DateTime).day}/${(n.createdAt as DateTime).month}/${(n.createdAt as DateTime).year}',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      selected: isSelected,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );

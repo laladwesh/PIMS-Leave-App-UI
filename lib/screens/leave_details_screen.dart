@@ -203,11 +203,12 @@ class _LeaveDetailsScreenState extends State<LeaveDetailsScreen> {
               },
             )
           : null,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Card(
               child: ListTile(
                 leading: const Icon(Icons.info_outline),
@@ -349,7 +350,8 @@ class _LeaveDetailsScreenState extends State<LeaveDetailsScreen> {
           ],
         ),
       ),
-      );
+      ),
+    );
     }
   }
 

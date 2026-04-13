@@ -288,19 +288,22 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     List<LeaveRequest> filtered = _leaveRequests;
     if (_filterStatus != 'All') {
       filtered = _leaveRequests.where((leave) {
-        if (_filterStatus == 'Pending')
+        if (_filterStatus == 'Pending') {
           return (leave.wardenStatus.status == 'pending' ||
                   leave.parentStatus.status == 'pending') &&
               leave.adminStatus.status != 'rejected' &&
               leave.wardenStatus.status != 'rejected' &&
               leave.parentStatus.status != 'rejected';
-        if (_filterStatus == 'Approved')
+        }
+        if (_filterStatus == 'Approved') {
           return leave.wardenStatus.status == 'approved';
-        if (_filterStatus == 'Rejected')
+        }
+        if (_filterStatus == 'Rejected') {
           return leave.parentStatus.status == 'rejected' ||
               leave.wardenStatus.status == 'rejected' ||
               leave.adminStatus.status == 'rejected' ||
               leave.adminStatus.status == 'stopped';
+        }
         return true;
       }).toList();
     }
@@ -486,9 +489,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () => _showQRCode(request),
                       icon: const Icon(Icons.qr_code_2),
-                      label: const Text('Show My QR Code'),
+                      label: Text(request.guardStatus.status == 'approved' ? 'Show Return QR' : 'Show Departure QR'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                        backgroundColor: request.guardStatus.status == 'approved' ? Colors.indigo : Colors.teal,
                         foregroundColor: Colors.white,
                       ),
                     ),
@@ -629,12 +632,20 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   }
 
   void _showQRCode(LeaveRequest approvedLeave) {
-    final qrData =
-        '${_studentName}|${approvedLeave.reason}|${approvedLeave.id}|${approvedLeave.studentBatch}';
+    final isReturn = approvedLeave.guardStatus.status == 'approved';
+    final qrData = isReturn 
+        ? '${_studentName}|${approvedLeave.id}'
+        : '${_studentName}|${approvedLeave.reason}|${approvedLeave.id}|${approvedLeave.studentBatch}';
+        
+    final title = isReturn ? 'Your Return QR Code' : 'Your Departure QR Code';
+    final instructions = isReturn 
+        ? 'Present this code to the guard for scanning upon your return to campus.'
+        : 'Present this code to the guard for scanning upon your departure.';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Your Leave QR Code'),
+        title: Text(title),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -648,8 +659,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Present this code to the guard for scanning upon departure and return.',
+            Text(
+              instructions,
               textAlign: TextAlign.center,
             ),
           ],

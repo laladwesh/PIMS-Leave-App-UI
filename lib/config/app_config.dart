@@ -1,4 +1,3 @@
-
 class AppConfig {
   AppConfig._(); // prevent instantiation
 

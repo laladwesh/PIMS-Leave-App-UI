@@ -55,6 +55,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Use the release keystore for local debugging so Google Sign-In works
+            // without needing to add the development machine's debug SHA-1 to Firebase.
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             minifyEnabled false

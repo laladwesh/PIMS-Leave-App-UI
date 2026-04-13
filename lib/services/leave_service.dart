@@ -60,7 +60,7 @@ class LeaveService {
     dev.log('[LeaveService] Response status: ${response.statusCode}');
     final respStr = await response.stream.bytesToString();
     dev.log('[LeaveService] Response body: $respStr');
-    if (response.statusCode == 201) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
       // Option 1: Just return null, don't parse
       return null;
       // Option 2: If you want to parse, catch errors:

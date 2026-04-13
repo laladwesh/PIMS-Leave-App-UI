@@ -67,8 +67,8 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to submit leave. Please try again.'),
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
           backgroundColor: Colors.red,
         ),
       );
@@ -131,13 +131,14 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
           ),
           foregroundColor: Colors.white,
         ),
-        body: loading
-            ? const Center(child: CircularProgressIndicator())
-            : Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.all(16.0),
-                  children: [
+        body: SafeArea(
+          child: loading
+              ? const Center(child: CircularProgressIndicator())
+              : Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
                     _buildDateTimePicker(
                       context: context,
                       controller: startDateController,
@@ -195,6 +196,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                 ),
               ),
       ),
+    ),
     );
   }
 
