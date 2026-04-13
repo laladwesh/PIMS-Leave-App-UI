@@ -489,9 +489,14 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () => _showQRCode(request),
                       icon: const Icon(Icons.qr_code_2),
-                      label: Text(request.guardStatus.status == 'approved' ? 'Show Return QR' : 'Show Departure QR'),
+                      label: Text(request.guardStatus.status == 'approved'
+                          ? 'Show Return QR'
+                          : 'Show Departure QR'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: request.guardStatus.status == 'approved' ? Colors.indigo : Colors.teal,
+                        backgroundColor:
+                            request.guardStatus.status == 'approved'
+                                ? Colors.indigo
+                                : Colors.teal,
                         foregroundColor: Colors.white,
                       ),
                     ),
@@ -633,12 +638,12 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   void _showQRCode(LeaveRequest approvedLeave) {
     final isReturn = approvedLeave.guardStatus.status == 'approved';
-    final qrData = isReturn 
+    final qrData = isReturn
         ? '${_studentName}|${approvedLeave.id}'
         : '${_studentName}|${approvedLeave.reason}|${approvedLeave.id}|${approvedLeave.studentBatch}';
-        
+
     final title = isReturn ? 'Your Return QR Code' : 'Your Departure QR Code';
-    final instructions = isReturn 
+    final instructions = isReturn
         ? 'Present this code to the guard for scanning upon your return to campus.'
         : 'Present this code to the guard for scanning upon your departure.';
 

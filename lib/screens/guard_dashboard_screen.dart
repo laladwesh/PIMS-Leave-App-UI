@@ -221,7 +221,6 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
     if (jwtToken == null) return;
     try {
       final data = qrData.split('|');
-      if (data.length != 2) throw Exception('Invalid QR code format for return. Please use Return QR.');
       final leaveId = data[1];
       final snapshot = await _departedAwaitingReturnFuture;
       final leaves = snapshot['leaves'] ?? [];
@@ -254,8 +253,6 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
       );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -294,674 +291,602 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                 children: [
                   // Departure Tab
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                     child: FutureBuilder<Map<String, dynamic>>(
-                            future: _allDepartureFuture,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              } else if (snapshot.hasError) {
-                                return Center(
-                                    child: Text('Error: ${snapshot.error}'));
-                              } else if (snapshot.hasData) {
-                                final leaves = snapshot.data!['leaves'] ?? [];
-                                // Filtering and sorting directly on the response
-                                List<dynamic> filtered = leaves;
-                                if (_filter != 'All') {
-                                  filtered = leaves
-                                      .where((app) =>
-                                          (app['guardStatus']?['status'] ??
-                                              'pending') ==
-                                          _filter.toLowerCase())
-                                      .toList();
-                                }
-                                filtered.sort((a, b) {
-                                  String aStatus = (a['guardStatus']
-                                          ?['status'] ??
-                                      'pending');
-                                  String bStatus = (b['guardStatus']
-                                          ?['status'] ??
-                                      'pending');
-                                  if (aStatus == 'pending' &&
-                                      bStatus != 'pending') {
-                                    return -1;
-                                  }
-                                  if (aStatus != 'pending' &&
-                                      bStatus == 'pending') {
-                                    return 1;
-                                  }
-                                  return 0;
-                                });
+                      future: _allDepartureFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(
+                              child: Text('Error: ${snapshot.error}'));
+                        } else if (snapshot.hasData) {
+                          final leaves = snapshot.data!['leaves'] ?? [];
+                          // Filtering and sorting directly on the response
+                          List<dynamic> filtered = leaves;
+                          if (_filter != 'All') {
+                            filtered = leaves
+                                .where((app) =>
+                                    (app['guardStatus']?['status'] ??
+                                        'pending') ==
+                                    _filter.toLowerCase())
+                                .toList();
+                          }
+                          filtered.sort((a, b) {
+                            String aStatus =
+                                (a['guardStatus']?['status'] ?? 'pending');
+                            String bStatus =
+                                (b['guardStatus']?['status'] ?? 'pending');
+                            if (aStatus == 'pending' && bStatus != 'pending') {
+                              return -1;
+                            }
+                            if (aStatus != 'pending' && bStatus == 'pending') {
+                              return 1;
+                            }
+                            return 0;
+                          });
 
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                                child: Row(
                                   children: [
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-                                      child: Row(
-                                        children: [
-                                          const Text(
-                                            'Applications',
-                                            style: TextStyle(
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          const Spacer(),
-                                          PopupMenuButton<String>(
-                                            icon: const Icon(Icons.filter_list),
-                                            onSelected: (value) {
-                                              setState(() {
-                                                _filter = value;
-                                              });
-                                            },
-                                            itemBuilder: (context) => [
-                                              const PopupMenuItem(
-                                                  value: 'All',
-                                                  child: Text('All')),
-                                              const PopupMenuItem(
-                                                  value: 'Pending',
-                                                  child: Text('Pending')),
-                                              const PopupMenuItem(
-                                                  value: 'Approved',
-                                                  child: Text('Approved')),
-                                              const PopupMenuItem(
-                                                  value: 'Rejected',
-                                                  child: Text('Rejected')),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
+                                    const Text(
+                                      'Applications',
+                                      style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold),
                                     ),
-                                    Expanded(
-                                      child: filtered.isEmpty
-                                          ? const Center(
-                                              child: Text(
-                                                  'No applications found.'))
-                                          : ListView.builder(
-                                              padding: const EdgeInsets.only(bottom: 80),
-                                              itemCount: filtered.length,
-                                              itemBuilder: (context, idx) {
-                                                final app = filtered[idx];
-                                                final status =
-                                                    (app['guardStatus']
-                                                            ?['status'] ??
-                                                        'pending') as String;
-                                                final statusColor =
-                                                    status == 'approved'
-                                                        ? Colors.green
-                                                        : status == 'rejected'
-                                                            ? Colors.red
-                                                            : Colors.orange;
-                                                // Card UI with limited width and better design
-                                                return Center(
-                                                  child: ConstrainedBox(
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                            maxWidth: 480),
-                                                    child: Card(
-                                                      elevation: 3,
-                                                      margin: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 6,
-                                                          horizontal: 4),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(14),
-                                                        side: BorderSide(
-                                                            color: statusColor
-                                                                .withOpacity(
-                                                                    0.3),
-                                                            width: 1.2),
-                                                      ),
-                                                      child: InkWell(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(14),
-                                                        onTap: () =>
-                                                            _showApplicationDetails(
-                                                                app['_id']),
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(12),
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Row(
-                                                                children: [
-                                                                  CircleAvatar(
-                                                                    radius: 20,
-                                                                    backgroundColor: Colors
-                                                                        .purple
-                                                                        .shade100,
-                                                                    child: Icon(
-                                                                      Icons
-                                                                          .person,
-                                                                      color: Colors
-                                                                          .purple
-                                                                          .shade700,
-                                                                      size: 22,
-                                                                    ),
-                                                                  ),
-                                                                  const SizedBox(
-                                                                      width:
-                                                                          10),
-                                                                  Expanded(
-                                                                    child:
-                                                                        Column(
-                                                                      crossAxisAlignment:
-                                                                          CrossAxisAlignment
-                                                                              .start,
-                                                                      children: [
-                                                                        Text(
-                                                                          app['student']?['name'] ??
-                                                                              'Unknown',
-                                                                          style:
-                                                                              const TextStyle(
-                                                                            fontWeight:
-                                                                                FontWeight.bold,
-                                                                            fontSize:
-                                                                                15.5,
-                                                                          ),
-                                                                        ),
-                                                                        const SizedBox(
-                                                                            height:
-                                                                                2),
-                                                                        Text(
-                                                                          'Batch: ${app['student']?['batch'] ?? 'Unknown'}',
-                                                                          style:
-                                                                              TextStyle(
-                                                                            color: Colors.grey.shade700,
-                                                                            fontSize:
-                                                                                13,
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                  ),
-                                                                  Chip(
-                                                                    label: Text(
-                                                                      status[0]
-                                                                              .toUpperCase() +
-                                                                          status
-                                                                              .substring(1),
-                                                                      style:
-                                                                          TextStyle(
-                                                                        color:
-                                                                            statusColor,
-                                                                        fontWeight:
-                                                                            FontWeight.bold,
-                                                                        fontSize: 12,
-                                                                      ),
-                                                                    ),
-                                                                    backgroundColor:
-                                                                        statusColor
-                                                                            .withOpacity(0.15),
-                                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                                                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                              const SizedBox(
-                                                                  height: 8),
-                                                              Row(
-                                                                children: [
-                                                                  const Icon(
-                                                                      Icons
-                                                                          .info_outline,
-                                                                      size: 16,
-                                                                      color: Colors
-                                                                          .grey),
-                                                                  const SizedBox(
-                                                                      width: 4),
-                                                                  Expanded(
-                                                                    child: Text(
-                                                                      app['reason'] ??
-                                                                          '-',
-                                                                      style: const TextStyle(
-                                                                          fontSize:
-                                                                              13),
-                                                                      maxLines:
-                                                                          2,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .ellipsis,
-                                                                    ),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                              const SizedBox(
-                                                                  height: 6),
-                                                              Row(
-                                                                children: [
-                                                                  const Icon(
-                                                                      Icons
-                                                                          .calendar_today,
-                                                                      size: 14,
-                                                                      color: Colors
-                                                                          .orange),
-                                                                  const SizedBox(
-                                                                      width: 4),
-                                                                  Text(
-                                                                    'From: ${app['startDate']?.substring(0, 10) ?? '-'}',
-                                                                    style: const TextStyle(
-                                                                        fontSize:
-                                                                            12.5),
-                                                                  ),
-                                                                  const SizedBox(
-                                                                      width:
-                                                                          8),
-                                                                  const Icon(
-                                                                      Icons
-                                                                          .arrow_forward,
-                                                                      size: 14,
-                                                                      color: Colors
-                                                                          .blueGrey),
-                                                                  const SizedBox(
-                                                                      width: 4),
-                                                                  Text(
-                                                                    'To: ${app['endDate']?.substring(0, 10) ?? '-'}',
-                                                                    style: const TextStyle(
-                                                                        fontSize:
-                                                                            12.5),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                              if (app['documentUrl'] !=
-                                                                  null)
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .only(
-                                                                          top:
-                                                                              6),
-                                                                  child: Row(
-                                                                    children: [
-                                                                      const Icon(
-                                                                          Icons
-                                                                              .attach_file,
-                                                                          size:
-                                                                              14,
-                                                                          color:
-                                                                              Colors.blue),
-                                                                      const SizedBox(
-                                                                          width:
-                                                                              4),
-                                                                      Flexible(
-                                                                        child:
-                                                                            Text(
-                                                                          app['documentUrl'],
-                                                                          style:
-                                                                              const TextStyle(
-                                                                            color:
-                                                                                Colors.blue,
-                                                                            decoration:
-                                                                                TextDecoration.underline,
-                                                                            fontSize:
-                                                                                11.5,
-                                                                          ),
-                                                                          overflow:
-                                                                              TextOverflow.ellipsis,
-                                                                        ),
-                                                                      ),
-                                                                      IconButton(
-                                                                        icon: const Icon(
-                                                                            Icons
-                                                                                .visibility,
-                                                                            color:
-                                                                                Colors.blue,
-                                                                            size: 18),
-                                                                        tooltip:
-                                                                            'Preview Document',
-                                                                        padding: const EdgeInsets.all(4),
-                                                                        constraints: const BoxConstraints(),
-                                                                        onPressed:
-                                                                            () async {
-                                                                          final url =
-                                                                              app['documentUrl'];
-                                                                          if (url != null &&
-                                                                              await canLaunchUrl(Uri.parse(url))) {
-                                                                            await launchUrl(Uri.parse(url),
-                                                                                mode: LaunchMode.externalApplication);
-                                                                          } else {
-                                                                            if (!mounted) {
-                                                                              return;
-                                                                            }
-                                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                                              const SnackBar(
-                                                                                content: Text('Could not open document'),
-                                                                              ),
-                                                                            );
-                                                                          }
-                                                                        },
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                                ),
-                                                              const SizedBox(
-                                                                  height: 8),
-                                                              // Only show approve/reject icons for pending, on left/right
-                                                              // Only show approve/reject or admin stopped for pending status
-                                                              if (status ==
-                                                                  'pending')
-                                                                (() {
-                                                                  final adminStatus =
-                                                                      app['adminStatus']
-                                                                              ?[
-                                                                              'status'] ??
-                                                                          '';
-                                                                  if (adminStatus ==
-                                                                      'stopped') {
-                                                                    return Row(
-                                                                      children: [
-                                                                        const Icon(
-                                                                            Icons
-                                                                                .block,
-                                                                            color:
-                                                                                Colors.red,
-                                                                            size: 16),
-                                                                        const SizedBox(
-                                                                            width:
-                                                                                4),
-                                                                        const Text(
-                                                                          'Admin Stopped',
-                                                                          style: TextStyle(
-                                                                              fontSize: 13,
-                                                                              color: Colors.red,
-                                                                              fontWeight: FontWeight.bold),
-                                                                        ),
-                                                                      ],
-                                                                    );
-                                                                  } else {
-                                                                    return Row(
-                                                                      mainAxisAlignment:
-                                                                          MainAxisAlignment
-                                                                              .spaceBetween,
-                                                                      children: [
-                                                                        Expanded(
-                                                                          child: Container(
-                                                                            margin: const EdgeInsets.only(right: 6),
-                                                                            decoration:
-                                                                                BoxDecoration(
-                                                                              borderRadius:
-                                                                                  BorderRadius.circular(10),
-                                                                              gradient:
-                                                                                  LinearGradient(
-                                                                                colors: [
-                                                                                  Colors.green.withOpacity(0.2),
-                                                                                  Colors.green.withOpacity(0.5)
-                                                                                ],
-                                                                                begin: Alignment.topLeft,
-                                                                                end: Alignment.bottomRight,
-                                                                              ),
-                                                                              border:
-                                                                                  Border.all(color: Colors.green.withOpacity(0.4), width: 1),
-                                                                            ),
-                                                                            child:
-                                                                                ElevatedButton(
-                                                                              onPressed:
-                                                                                  () async {
-                                                                                final confirm = await showDialog<bool>(
-                                                                                  context: context,
-                                                                                  builder: (context) => AlertDialog(
-                                                                                    title: const Text('Approve Application'),
-                                                                                    content: const Text('Are you sure you want to approve this application?'),
-                                                                                    actions: [
-                                                                                      TextButton(
-                                                                                        onPressed: () => Navigator.pop(context, false),
-                                                                                        child: const Text('Cancel'),
-                                                                                      ),
-                                                                                      ElevatedButton(
-                                                                                        onPressed: () => Navigator.pop(context, true),
-                                                                                        child: const Text('Approve'),
-                                                                                      ),
-                                                                                    ],
-                                                                                  ),
-                                                                                );
-                                                                                if (confirm == true) {
-                                                                                  await _handleDecision(app['_id'], 'approved');
-                                                                                }
-                                                                              },
-                                                                              style:
-                                                                                  ElevatedButton.styleFrom(
-                                                                                backgroundColor: Colors.transparent,
-                                                                                shadowColor: Colors.transparent,
-                                                                                foregroundColor: Colors.green,
-                                                                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                                                              ),
-                                                                              child:
-                                                                                  const Text('Approve', style: TextStyle(fontSize: 13.5)),
-                                                                            ),
-                                                                          ),
-                                                                        ),
-                                                                        Expanded(
-                                                                          child: Container(
-                                                                            margin: const EdgeInsets.only(left: 6),
-                                                                            decoration:
-                                                                                BoxDecoration(
-                                                                              borderRadius:
-                                                                                  BorderRadius.circular(10),
-                                                                              gradient:
-                                                                                  LinearGradient(
-                                                                                colors: [
-                                                                                  Colors.red.withOpacity(0.2),
-                                                                                  Colors.red.withOpacity(0.5)
-                                                                                ],
-                                                                                begin: Alignment.topLeft,
-                                                                                end: Alignment.bottomRight,
-                                                                              ),
-                                                                              border:
-                                                                                  Border.all(color: Colors.red.withOpacity(0.4), width: 1),
-                                                                            ),
-                                                                            child:
-                                                                                ElevatedButton(
-                                                                              onPressed:
-                                                                                  () async {
-                                                                                final confirm = await showDialog<bool>(
-                                                                                  context: context,
-                                                                                  builder: (context) => AlertDialog(
-                                                                                    title: const Text('Reject Application'),
-                                                                                    content: const Text('Are you sure you want to reject this application?'),
-                                                                                    actions: [
-                                                                                      TextButton(
-                                                                                        onPressed: () => Navigator.pop(context, false),
-                                                                                        child: const Text('Cancel'),
-                                                                                      ),
-                                                                                      ElevatedButton(
-                                                                                        onPressed: () => Navigator.pop(context, true),
-                                                                                        child: const Text('Reject'),
-                                                                                      ),
-                                                                                    ],
-                                                                                  ),
-                                                                                );
-                                                                                if (confirm == true) {
-                                                                                  await _handleDecision(app['_id'], 'rejected');
-                                                                                }
-                                                                              },
-                                                                              style:
-                                                                                  ElevatedButton.styleFrom(
-                                                                                backgroundColor: Colors.transparent,
-                                                                                shadowColor: Colors.transparent,
-                                                                                foregroundColor: Colors.red,
-                                                                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                                                              ),
-                                                                              child:
-                                                                                  const Text('Reject', style: TextStyle(fontSize: 13.5)),
-                                                                            ),
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    );
-                                                                  }
-                                                                })(),
-                                                              if (status ==
-                                                                      'rejected' &&
-                                                                  app['guardStatus']
-                                                                          ?[
-                                                                          'reason'] !=
-                                                                      null)
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .only(
-                                                                          top:
-                                                                              4),
-                                                                  child: Row(
-                                                                    children: [
-                                                                      const Icon(
-                                                                          Icons
-                                                                              .info,
-                                                                          color: Colors
-                                                                              .red,
-                                                                          size:
-                                                                              14),
-                                                                      const SizedBox(
-                                                                          width:
-                                                                              4),
-                                                                      Expanded(
-                                                                        child:
-                                                                            Text(
-                                                                          app['guardStatus']?['reason'] ??
-                                                                              '',
-                                                                          style: const TextStyle(
-                                                                              fontSize: 12,
-                                                                              color: Colors.red),
-                                                                        ),
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                                ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
+                                    const Spacer(),
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(Icons.filter_list),
+                                      onSelected: (value) {
+                                        setState(() {
+                                          _filter = value;
+                                        });
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                            value: 'All', child: Text('All')),
+                                        const PopupMenuItem(
+                                            value: 'Pending',
+                                            child: Text('Pending')),
+                                        const PopupMenuItem(
+                                            value: 'Approved',
+                                            child: Text('Approved')),
+                                        const PopupMenuItem(
+                                            value: 'Rejected',
+                                            child: Text('Rejected')),
+                                      ],
                                     ),
                                   ],
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                  // Return Tab
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                    child: FutureBuilder<Map<String, dynamic>>(
-                            future: _departedAwaitingReturnFuture,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              } else if (snapshot.hasError) {
-                                return Center(
-                                    child: Text('Error: ${snapshot.error}'));
-                              } else if (snapshot.hasData) {
-                                final leaves = snapshot.data!['leaves'] ?? [];
-                                if (leaves.isEmpty) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 8),
-                                    child: Text('No students awaiting return.'),
-                                  );
-                                }
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Padding(
-                                      padding: EdgeInsets.fromLTRB(4, 8, 4, 0),
-                                      child: Text(
-                                        'Departed Students Awaiting Return',
-                                        style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: ListView.builder(
-                                        padding: const EdgeInsets.only(bottom: 80),
-                                        itemCount: leaves.length,
-                                        itemBuilder: (context, index) {
-                                          final leave = leaves[index];
+                                ),
+                              ),
+                              Expanded(
+                                child: filtered.isEmpty
+                                    ? const Center(
+                                        child: Text('No applications found.'))
+                                    : ListView.builder(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 80),
+                                        itemCount: filtered.length,
+                                        itemBuilder: (context, idx) {
+                                          final app = filtered[idx];
+                                          final status = (app['guardStatus']
+                                                  ?['status'] ??
+                                              'pending') as String;
+                                          final statusColor =
+                                              status == 'approved'
+                                                  ? Colors.green
+                                                  : status == 'rejected'
+                                                      ? Colors.red
+                                                      : Colors.orange;
+                                          // Card UI with limited width and better design
                                           return Center(
                                             child: ConstrainedBox(
-                                              constraints: const BoxConstraints(maxWidth: 480),
+                                              constraints: const BoxConstraints(
+                                                  maxWidth: 480),
                                               child: Card(
                                                 elevation: 3,
-                                                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 6,
+                                                        horizontal: 4),
                                                 shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(14),
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                  side: BorderSide(
+                                                      color: statusColor
+                                                          .withOpacity(0.3),
+                                                      width: 1.2),
                                                 ),
                                                 child: InkWell(
-                                                  borderRadius: BorderRadius.circular(14),
-                                                  onTap: () => _showApplicationDetails(leave['_id']),
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                  onTap: () =>
+                                                      _showApplicationDetails(
+                                                          app['_id']),
                                                   child: Padding(
-                                                    padding: const EdgeInsets.all(12),
-                                                    child: Row(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            12),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
                                                       children: [
-                                                        CircleAvatar(
-                                                          radius: 20,
-                                                          backgroundColor: Colors.blue.shade100,
-                                                          child: Icon(Icons.person, color: Colors.blue.shade700, size: 22),
-                                                        ),
-                                                        const SizedBox(width: 12),
-                                                        Expanded(
-                                                          child: Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                              Text(
-                                                                leave['student']?['name'] ?? 'Unknown',
-                                                                style: const TextStyle(
-                                                                  fontWeight: FontWeight.bold,
-                                                                  fontSize: 15.5,
-                                                                ),
+                                                        Row(
+                                                          children: [
+                                                            CircleAvatar(
+                                                              radius: 20,
+                                                              backgroundColor:
+                                                                  Colors.purple
+                                                                      .shade100,
+                                                              child: Icon(
+                                                                Icons.person,
+                                                                color: Colors
+                                                                    .purple
+                                                                    .shade700,
+                                                                size: 22,
                                                               ),
-                                                              const SizedBox(height: 3),
-                                                              Text(
-                                                                'Batch: ${leave['student']?['batch'] ?? 'Unknown'}',
-                                                                style: TextStyle(
-                                                                  fontSize: 13,
-                                                                  color: Colors.grey.shade700,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(height: 3),
-                                                              Row(
+                                                            ),
+                                                            const SizedBox(
+                                                                width: 10),
+                                                            Expanded(
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .start,
                                                                 children: [
-                                                                  Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
-                                                                  const SizedBox(width: 4),
-                                                                  Expanded(
-                                                                    child: Text(
-                                                                      'Left: ${_formatDateTime(leave['guardStatus']?['decidedAt'])}',
-                                                                      style: TextStyle(
-                                                                        fontSize: 12.5,
-                                                                        color: Colors.grey.shade800,
-                                                                      ),
+                                                                  Text(
+                                                                    app['student']
+                                                                            ?[
+                                                                            'name'] ??
+                                                                        'Unknown',
+                                                                    style:
+                                                                        const TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      fontSize:
+                                                                          15.5,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      height:
+                                                                          2),
+                                                                  Text(
+                                                                    'Batch: ${app['student']?['batch'] ?? 'Unknown'}',
+                                                                    style:
+                                                                        TextStyle(
+                                                                      color: Colors
+                                                                          .grey
+                                                                          .shade700,
+                                                                      fontSize:
+                                                                          13,
                                                                     ),
                                                                   ),
                                                                 ],
                                                               ),
-                                                            ],
-                                                          ),
+                                                            ),
+                                                            Chip(
+                                                              label: Text(
+                                                                status[0]
+                                                                        .toUpperCase() +
+                                                                    status
+                                                                        .substring(
+                                                                            1),
+                                                                style:
+                                                                    TextStyle(
+                                                                  color:
+                                                                      statusColor,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 12,
+                                                                ),
+                                                              ),
+                                                              backgroundColor:
+                                                                  statusColor
+                                                                      .withOpacity(
+                                                                          0.15),
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          8,
+                                                                      vertical:
+                                                                          0),
+                                                              materialTapTargetSize:
+                                                                  MaterialTapTargetSize
+                                                                      .shrinkWrap,
+                                                            ),
+                                                          ],
                                                         ),
-                                                        ElevatedButton(
-                                                          onPressed: () => _handleMarkReturn(leave['_id'].toString()),
-                                                          style: ElevatedButton.styleFrom(
-                                                            backgroundColor: Colors.blue,
-                                                            foregroundColor: Colors.white,
-                                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                                          ),
-                                                          child: const Text('Mark\nReturned', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5)),
+                                                        const SizedBox(
+                                                            height: 8),
+                                                        Row(
+                                                          children: [
+                                                            const Icon(
+                                                                Icons
+                                                                    .info_outline,
+                                                                size: 16,
+                                                                color: Colors
+                                                                    .grey),
+                                                            const SizedBox(
+                                                                width: 4),
+                                                            Expanded(
+                                                              child: Text(
+                                                                app['reason'] ??
+                                                                    '-',
+                                                                style:
+                                                                    const TextStyle(
+                                                                        fontSize:
+                                                                            13),
+                                                                maxLines: 2,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
+                                                        const SizedBox(
+                                                            height: 6),
+                                                        Row(
+                                                          children: [
+                                                            const Icon(
+                                                                Icons
+                                                                    .calendar_today,
+                                                                size: 14,
+                                                                color: Colors
+                                                                    .orange),
+                                                            const SizedBox(
+                                                                width: 4),
+                                                            Text(
+                                                              'From: ${app['startDate']?.substring(0, 10) ?? '-'}',
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          12.5),
+                                                            ),
+                                                            const SizedBox(
+                                                                width: 8),
+                                                            const Icon(
+                                                                Icons
+                                                                    .arrow_forward,
+                                                                size: 14,
+                                                                color: Colors
+                                                                    .blueGrey),
+                                                            const SizedBox(
+                                                                width: 4),
+                                                            Text(
+                                                              'To: ${app['endDate']?.substring(0, 10) ?? '-'}',
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          12.5),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        if (app['documentUrl'] !=
+                                                            null)
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    top: 6),
+                                                            child: Row(
+                                                              children: [
+                                                                const Icon(
+                                                                    Icons
+                                                                        .attach_file,
+                                                                    size: 14,
+                                                                    color: Colors
+                                                                        .blue),
+                                                                const SizedBox(
+                                                                    width: 4),
+                                                                Flexible(
+                                                                  child: Text(
+                                                                    app['documentUrl'],
+                                                                    style:
+                                                                        const TextStyle(
+                                                                      color: Colors
+                                                                          .blue,
+                                                                      decoration:
+                                                                          TextDecoration
+                                                                              .underline,
+                                                                      fontSize:
+                                                                          11.5,
+                                                                    ),
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                  ),
+                                                                ),
+                                                                IconButton(
+                                                                  icon: const Icon(
+                                                                      Icons
+                                                                          .visibility,
+                                                                      color: Colors
+                                                                          .blue,
+                                                                      size: 18),
+                                                                  tooltip:
+                                                                      'Preview Document',
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .all(
+                                                                          4),
+                                                                  constraints:
+                                                                      const BoxConstraints(),
+                                                                  onPressed:
+                                                                      () async {
+                                                                    final url =
+                                                                        app['documentUrl'];
+                                                                    if (url !=
+                                                                            null &&
+                                                                        await canLaunchUrl(
+                                                                            Uri.parse(url))) {
+                                                                      await launchUrl(
+                                                                          Uri.parse(
+                                                                              url),
+                                                                          mode:
+                                                                              LaunchMode.externalApplication);
+                                                                    } else {
+                                                                      if (!mounted) {
+                                                                        return;
+                                                                      }
+                                                                      ScaffoldMessenger.of(
+                                                                              context)
+                                                                          .showSnackBar(
+                                                                        const SnackBar(
+                                                                          content:
+                                                                              Text('Could not open document'),
+                                                                        ),
+                                                                      );
+                                                                    }
+                                                                  },
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        const SizedBox(
+                                                            height: 8),
+                                                        // Only show approve/reject icons for pending, on left/right
+                                                        // Only show approve/reject or admin stopped for pending status
+                                                        if (status == 'pending')
+                                                          (() {
+                                                            final adminStatus =
+                                                                app['adminStatus']
+                                                                        ?[
+                                                                        'status'] ??
+                                                                    '';
+                                                            if (adminStatus ==
+                                                                'stopped') {
+                                                              return Row(
+                                                                children: [
+                                                                  const Icon(
+                                                                      Icons
+                                                                          .block,
+                                                                      color: Colors
+                                                                          .red,
+                                                                      size: 16),
+                                                                  const SizedBox(
+                                                                      width: 4),
+                                                                  const Text(
+                                                                    'Admin Stopped',
+                                                                    style: TextStyle(
+                                                                        fontSize:
+                                                                            13,
+                                                                        color: Colors
+                                                                            .red,
+                                                                        fontWeight:
+                                                                            FontWeight.bold),
+                                                                  ),
+                                                                ],
+                                                              );
+                                                            } else {
+                                                              return Row(
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .spaceBetween,
+                                                                children: [
+                                                                  Expanded(
+                                                                    child:
+                                                                        Container(
+                                                                      margin: const EdgeInsets
+                                                                          .only(
+                                                                          right:
+                                                                              6),
+                                                                      decoration:
+                                                                          BoxDecoration(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(10),
+                                                                        gradient:
+                                                                            LinearGradient(
+                                                                          colors: [
+                                                                            Colors.green.withOpacity(0.2),
+                                                                            Colors.green.withOpacity(0.5)
+                                                                          ],
+                                                                          begin:
+                                                                              Alignment.topLeft,
+                                                                          end: Alignment
+                                                                              .bottomRight,
+                                                                        ),
+                                                                        border: Border.all(
+                                                                            color:
+                                                                                Colors.green.withOpacity(0.4),
+                                                                            width: 1),
+                                                                      ),
+                                                                      child:
+                                                                          ElevatedButton(
+                                                                        onPressed:
+                                                                            () async {
+                                                                          final confirm =
+                                                                              await showDialog<bool>(
+                                                                            context:
+                                                                                context,
+                                                                            builder: (context) =>
+                                                                                AlertDialog(
+                                                                              title: const Text('Approve Application'),
+                                                                              content: const Text('Are you sure you want to approve this application?'),
+                                                                              actions: [
+                                                                                TextButton(
+                                                                                  onPressed: () => Navigator.pop(context, false),
+                                                                                  child: const Text('Cancel'),
+                                                                                ),
+                                                                                ElevatedButton(
+                                                                                  onPressed: () => Navigator.pop(context, true),
+                                                                                  child: const Text('Approve'),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                          );
+                                                                          if (confirm ==
+                                                                              true) {
+                                                                            await _handleDecision(app['_id'],
+                                                                                'approved');
+                                                                          }
+                                                                        },
+                                                                        style: ElevatedButton
+                                                                            .styleFrom(
+                                                                          backgroundColor:
+                                                                              Colors.transparent,
+                                                                          shadowColor:
+                                                                              Colors.transparent,
+                                                                          foregroundColor:
+                                                                              Colors.green,
+                                                                          padding: const EdgeInsets
+                                                                              .symmetric(
+                                                                              vertical: 10),
+                                                                        ),
+                                                                        child: const Text(
+                                                                            'Approve',
+                                                                            style:
+                                                                                TextStyle(fontSize: 13.5)),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  Expanded(
+                                                                    child:
+                                                                        Container(
+                                                                      margin: const EdgeInsets
+                                                                          .only(
+                                                                          left:
+                                                                              6),
+                                                                      decoration:
+                                                                          BoxDecoration(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(10),
+                                                                        gradient:
+                                                                            LinearGradient(
+                                                                          colors: [
+                                                                            Colors.red.withOpacity(0.2),
+                                                                            Colors.red.withOpacity(0.5)
+                                                                          ],
+                                                                          begin:
+                                                                              Alignment.topLeft,
+                                                                          end: Alignment
+                                                                              .bottomRight,
+                                                                        ),
+                                                                        border: Border.all(
+                                                                            color:
+                                                                                Colors.red.withOpacity(0.4),
+                                                                            width: 1),
+                                                                      ),
+                                                                      child:
+                                                                          ElevatedButton(
+                                                                        onPressed:
+                                                                            () async {
+                                                                          final confirm =
+                                                                              await showDialog<bool>(
+                                                                            context:
+                                                                                context,
+                                                                            builder: (context) =>
+                                                                                AlertDialog(
+                                                                              title: const Text('Reject Application'),
+                                                                              content: const Text('Are you sure you want to reject this application?'),
+                                                                              actions: [
+                                                                                TextButton(
+                                                                                  onPressed: () => Navigator.pop(context, false),
+                                                                                  child: const Text('Cancel'),
+                                                                                ),
+                                                                                ElevatedButton(
+                                                                                  onPressed: () => Navigator.pop(context, true),
+                                                                                  child: const Text('Reject'),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                          );
+                                                                          if (confirm ==
+                                                                              true) {
+                                                                            await _handleDecision(app['_id'],
+                                                                                'rejected');
+                                                                          }
+                                                                        },
+                                                                        style: ElevatedButton
+                                                                            .styleFrom(
+                                                                          backgroundColor:
+                                                                              Colors.transparent,
+                                                                          shadowColor:
+                                                                              Colors.transparent,
+                                                                          foregroundColor:
+                                                                              Colors.red,
+                                                                          padding: const EdgeInsets
+                                                                              .symmetric(
+                                                                              vertical: 10),
+                                                                        ),
+                                                                        child: const Text(
+                                                                            'Reject',
+                                                                            style:
+                                                                                TextStyle(fontSize: 13.5)),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              );
+                                                            }
+                                                          })(),
+                                                        if (status ==
+                                                                'rejected' &&
+                                                            app['guardStatus']?[
+                                                                    'reason'] !=
+                                                                null)
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    top: 4),
+                                                            child: Row(
+                                                              children: [
+                                                                const Icon(
+                                                                    Icons.info,
+                                                                    color: Colors
+                                                                        .red,
+                                                                    size: 14),
+                                                                const SizedBox(
+                                                                    width: 4),
+                                                                Expanded(
+                                                                  child: Text(
+                                                                    app['guardStatus']
+                                                                            ?[
+                                                                            'reason'] ??
+                                                                        '',
+                                                                    style: const TextStyle(
+                                                                        fontSize:
+                                                                            12,
+                                                                        color: Colors
+                                                                            .red),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
                                                       ],
                                                     ),
                                                   ),
@@ -971,49 +896,219 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                                           );
                                         },
                                       ),
-                                    ),
-                                  ],
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          floatingActionButton: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                final currentTab = _tabController.index;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => QrScannerScreen(
-                      onQrCodeScanned: currentTab == 0 
-                          ? _handleQrCodeForDeparture 
-                          : _handleQrCodeForReturn,
-                      tab: currentTab == 0 ? 'departure' : 'return',
+                              ),
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
                     ),
                   ),
-                );
-              },
-              backgroundColor: Colors.purple.shade600,
-              icon: const Icon(Icons.qr_code_scanner, size: 28),
-              label: const Text(
-                'Scan QR Code',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  // Return Tab
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                    child: FutureBuilder<Map<String, dynamic>>(
+                      future: _departedAwaitingReturnFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(
+                              child: Text('Error: ${snapshot.error}'));
+                        } else if (snapshot.hasData) {
+                          final leaves = snapshot.data!['leaves'] ?? [];
+                          if (leaves.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Text('No students awaiting return.'),
+                            );
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(4, 8, 4, 0),
+                                child: Text(
+                                  'Departed Students Awaiting Return',
+                                  style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.only(bottom: 80),
+                                  itemCount: leaves.length,
+                                  itemBuilder: (context, index) {
+                                    final leave = leaves[index];
+                                    return Center(
+                                      child: ConstrainedBox(
+                                        constraints:
+                                            const BoxConstraints(maxWidth: 480),
+                                        child: Card(
+                                          elevation: 3,
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 6, horizontal: 4),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                          ),
+                                          child: InkWell(
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            onTap: () =>
+                                                _showApplicationDetails(
+                                                    leave['_id']),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(12),
+                                              child: Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 20,
+                                                    backgroundColor:
+                                                        Colors.blue.shade100,
+                                                    child: Icon(Icons.person,
+                                                        color: Colors
+                                                            .blue.shade700,
+                                                        size: 22),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          leave['student']
+                                                                  ?['name'] ??
+                                                              'Unknown',
+                                                          style:
+                                                              const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 15.5,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 3),
+                                                        Text(
+                                                          'Batch: ${leave['student']?['batch'] ?? 'Unknown'}',
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            color: Colors
+                                                                .grey.shade700,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            height: 3),
+                                                        Row(
+                                                          children: [
+                                                            Icon(
+                                                                Icons
+                                                                    .access_time,
+                                                                size: 14,
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade600),
+                                                            const SizedBox(
+                                                                width: 4),
+                                                            Expanded(
+                                                              child: Text(
+                                                                'Left: ${_formatDateTime(leave['guardStatus']?['decidedAt'])}',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize:
+                                                                      12.5,
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade800,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  ElevatedButton(
+                                                    onPressed: () =>
+                                                        _handleMarkReturn(
+                                                            leave['_id']
+                                                                .toString()),
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.blue,
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 14,
+                                                          vertical: 10),
+                                                    ),
+                                                    child: const Text(
+                                                        'Mark\nReturned',
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        style: TextStyle(
+                                                            fontSize: 12.5)),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              final currentTab = _tabController.index;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QrScannerScreen(
+                    onQrCodeScanned: currentTab == 0
+                        ? _handleQrCodeForDeparture
+                        : _handleQrCodeForReturn,
+                    tab: currentTab == 0 ? 'departure' : 'return',
+                  ),
                 ),
+              );
+            },
+            backgroundColor: Colors.purple.shade600,
+            icon: const Icon(Icons.qr_code_scanner, size: 28),
+            label: const Text(
+              'Scan QR Code',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ),
     );
   }
 
