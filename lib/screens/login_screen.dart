@@ -287,7 +287,7 @@ class _LoginScreenState extends State<LoginScreen>
     });
     try {
       final GoogleSignIn _googleSignIn = GoogleSignIn(
-        clientId: Platform.isAndroid ? null : "250221986887-qj0n486rv57a4208s8v2bvqorb6q64qm.apps.googleusercontent.com",
+        clientId: Platform.isAndroid ? null : "250221986887-8j7j1tjj4q8bg4kuf0qj1mpvggo3p4i6.apps.googleusercontent.com",
       );
       
       // Clear any hung state from Google Play Services before attempting a new sign-in.

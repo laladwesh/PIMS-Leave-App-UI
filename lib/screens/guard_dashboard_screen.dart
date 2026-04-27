@@ -23,6 +23,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
   String? jwtToken;
   late TabController _tabController;
   String _filter = 'All';
+  String _searchQuery = '';
   DateTime? _lastBackPressed;
 
   @override
@@ -307,14 +308,24 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                           final leaves = snapshot.data!['leaves'] ?? [];
                           // Filtering and sorting directly on the response
                           List<dynamic> filtered = leaves;
-                          if (_filter != 'All') {
-                            filtered = leaves
-                                .where((app) =>
-                                    (app['guardStatus']?['status'] ??
-                                        'pending') ==
-                                    _filter.toLowerCase())
-                                .toList();
-                          }
+                            if (_filter != 'All') {
+                              filtered = leaves
+                                  .where((app) =>
+                                      (app['guardStatus']?['status'] ??
+                                          'pending') ==
+                                      _filter.toLowerCase())
+                                  .toList();
+                            }
+
+                            if (_searchQuery.isNotEmpty) {
+                              filtered = filtered.where((app) {
+                                final studentName = (app['student']?['name'] ?? '')
+                                    .toString()
+                                    .toLowerCase();
+                                return studentName
+                                    .contains(_searchQuery.toLowerCase());
+                              }).toList();
+                            }
                           filtered.sort((a, b) {
                             String aStatus =
                                 (a['guardStatus']?['status'] ?? 'pending');
@@ -920,10 +931,26 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                               child: Text('Error: ${snapshot.error}'));
                         } else if (snapshot.hasData) {
                           final leaves = snapshot.data!['leaves'] ?? [];
-                          if (leaves.isEmpty) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Text('No students awaiting return.'),
+                          
+                          List<dynamic> filtered = leaves;
+                          if (_searchQuery.isNotEmpty) {
+                            filtered = filtered.where((app) {
+                              final studentName = (app['student']?['name'] ?? '')
+                                  .toString()
+                                  .toLowerCase();
+                              return studentName
+                                  .contains(_searchQuery.toLowerCase());
+                            }).toList();
+                          }
+
+                          if (filtered.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: Text(_searchQuery.isEmpty 
+                                    ? 'No students awaiting return.' 
+                                    : 'No students found matching "$_searchQuery"'),
+                              ),
                             );
                           }
                           return Column(
@@ -941,9 +968,9 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                               Expanded(
                                 child: ListView.builder(
                                   padding: const EdgeInsets.only(bottom: 80),
-                                  itemCount: leaves.length,
+                                  itemCount: filtered.length,
                                   itemBuilder: (context, index) {
-                                    final leave = leaves[index];
+                                    final leave = filtered[index];
                                     return Center(
                                       child: ConstrainedBox(
                                         constraints:
@@ -1200,6 +1227,42 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                     },
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Container(
+                height: 45,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search by student name...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.white),
+                            onPressed: () {
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                  ),
+                ),
               ),
             ),
             TabBar(
