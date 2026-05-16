@@ -286,9 +286,10 @@ class _LoginScreenState extends State<LoginScreen>
       _authErrorMessage = null;
     });
     try {
-      final GoogleSignIn _googleSignIn = GoogleSignIn(
-        clientId: Platform.isAndroid ? null : "250221986887-8j7j1tjj4q8bg4kuf0qj1mpvggo3p4i6.apps.googleusercontent.com",
-      );
+      // On iOS, GoogleSignIn automatically reads the CLIENT_ID from
+      // GoogleService-Info.plist. Do NOT pass clientId here — it overrides
+      // the plist config and breaks the iOS sign-in flow.
+      final GoogleSignIn _googleSignIn = GoogleSignIn();
       
       // Clear any hung state from Google Play Services before attempting a new sign-in.
       // This resolves the issue where the app fails to sign in until a device reboot.

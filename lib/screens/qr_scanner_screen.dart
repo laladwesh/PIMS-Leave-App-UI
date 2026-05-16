@@ -93,8 +93,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _handleQrCodeForDeparture(String qrData) async {
     try {
-      final data =
-          qrData.split('|');
+      final data = qrData.split('|');
       final leaveId = data[2].trim();
       final batch = data.length > 3 ? data[3] : 'N/A';
       dev.log('Extracted Leave ID: $leaveId');
@@ -154,26 +153,32 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _handleQrCodeForReturn(String qrData) async {
     try {
-      final data =
-          qrData.split('|'); // Expecting "name|reason|leaveId" or with "batch"
-      if (data.length < 3) throw Exception('Invalid QR code format');
-      final leaveId = data[2].trim();
-      dev.log('Extracted Leave ID: $leaveId');
+      final data = qrData.split('|');
 
       final snapshot = await GuardService.getDepartedAwaitingReturn(jwtToken!);
-      final leaves = snapshot['leaves'] ?? [];
+      final leaves = snapshot['leaves'] as List<dynamic>? ?? [];
       dev.log('API Response Body: $snapshot');
 
-      final matchingLeave = leaves.firstWhere(
-        (leave) => leave['_id'] == leaveId,
-        orElse: () => null,
-      );
+      dynamic matchingLeave;
+      String? foundLeaveId;
 
-      if (matchingLeave == null) {
+      for (var part in data) {
+        matchingLeave = leaves.firstWhere(
+          (leave) => leave['_id'].toString() == part.trim(),
+          orElse: () => null,
+        );
+        if (matchingLeave != null) {
+          foundLeaveId = part.trim();
+          break;
+        }
+      }
+
+      if (matchingLeave == null || foundLeaveId == null) {
         _showCenterMessage('No matching leave found for return.');
         return;
       }
 
+      dev.log('Extracted Leave ID: $foundLeaveId');
       dev.log('Matching Leave Found: $matchingLeave');
 
       final confirm = await showDialog<bool>(
@@ -199,7 +204,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       if (confirm == true) {
         final response = await GuardService.markStudentReturn(
           jwtToken: jwtToken!,
-          id: leaveId,
+          id: foundLeaveId,
         );
 
         dev.log('Mark Return API Response: $response');

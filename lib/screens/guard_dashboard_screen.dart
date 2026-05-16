@@ -222,15 +222,24 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
     if (jwtToken == null) return;
     try {
       final data = qrData.split('|');
-      final leaveId = data[1];
       final snapshot = await _departedAwaitingReturnFuture;
-      final leaves = snapshot['leaves'] ?? [];
-      final matchingLeave = leaves.firstWhere(
-        (leave) => leave['_id'] == leaveId,
-        orElse: () => null,
-      );
+      final leaves = snapshot['leaves'] as List<dynamic>? ?? [];
+      
+      dynamic matchingLeave;
+      String? foundLeaveId;
 
-      if (matchingLeave == null) {
+      for (var part in data) {
+        matchingLeave = leaves.firstWhere(
+          (leave) => leave['_id'].toString() == part.trim(),
+          orElse: () => null,
+        );
+        if (matchingLeave != null) {
+          foundLeaveId = part.trim();
+          break;
+        }
+      }
+
+      if (matchingLeave == null || foundLeaveId == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No matching leave found for return.')),
@@ -240,7 +249,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
 
       await GuardService.markStudentReturn(
         jwtToken: jwtToken!,
-        id: leaveId,
+        id: foundLeaveId,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
