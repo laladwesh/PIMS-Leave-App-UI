@@ -9,6 +9,7 @@ import 'leave_details_screen.dart';
 import 'notifications_screen.dart';
 import '../services/leave_service.dart';
 import 'dart:developer' as dev;
+import '../helpers/error_handler.dart';
 
 class ParentDashboardScreen extends StatefulWidget {
   const ParentDashboardScreen({super.key});
@@ -51,21 +52,32 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       if (_token == null || _token!.isEmpty) {
         throw Exception('No authentication token found.');
       }
-      // Fetch both data in parallel
-      final results = await Future.wait([
-        ParentService.fetchApplications(token: _token!),
-        ParentService.fetchWardConcerns(token: _token!),
-      ]);
+      
+      List<LeaveRequest> fetchedLeaves = [];
+      List<Map<String, dynamic>> fetchedConcerns = [];
+
+      try {
+        fetchedLeaves = await ParentService.fetchApplications(token: _token!);
+      } catch (e) {
+        dev.log('Error fetching applications: $e');
+      }
+
+      try {
+        fetchedConcerns = await ParentService.fetchWardConcerns(token: _token!);
+      } catch (e) {
+        dev.log('Error fetching concerns: $e');
+      }
+
       setState(() {
-        _leaveRequests = results[0] as List<LeaveRequest>;
-        _wardConcerns = results[1] as List<Map<String, dynamic>>;
+        _leaveRequests = fetchedLeaves;
+        _wardConcerns = fetchedConcerns;
         _loading = false;
       });
     } catch (e) {
       setState(() => _loading = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load data: ${e.toString()}')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     }
   }
@@ -249,32 +261,93 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         children: [
           // Welcome Header
           Container(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(22.0),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
-                colors: [Colors.green.shade500, Colors.teal.shade400],
+                colors: [
+                  Colors.teal.shade800.withOpacity(0.95),
+                  Colors.green.shade700.withOpacity(0.95),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.15),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.teal.shade900.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Welcome, ${_Name ?? "Parent"}!',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome back,',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _Name ?? "Parent",
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.family_restroom_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _userEmail ?? '',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                  ),
+                const SizedBox(height: 16),
+                Divider(color: Colors.white.withOpacity(0.15), height: 1),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.email_outlined,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _userEmail ?? '',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.85),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -373,8 +446,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             child: RefreshIndicator(
               onRefresh: _fetchData,
               child: filteredRequests.isEmpty
-                  ? _buildEmptyState('No $_filterOption applications found.')
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [_buildEmptyState('No $_filterOption applications found.')],
+                    )
                   : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: filteredRequests.length,
                       itemBuilder: (context, index) =>
                           _buildLeaveRequestCard(filteredRequests[index]),
@@ -403,8 +480,12 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
             child: RefreshIndicator(
               onRefresh: _fetchData,
               child: _wardConcerns.isEmpty
-                  ? _buildEmptyState('No concerns reported yet.')
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [_buildEmptyState('No concerns reported yet.')],
+                    )
                   : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: _wardConcerns.length,
                       itemBuilder: (context, index) =>
                           _buildConcernCard(_wardConcerns[index]),
@@ -423,155 +504,238 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
 
     switch (request.parentStatus.status) {
       case 'pending':
-        statusColor = Colors.orange;
+        statusColor = Colors.orange.shade600;
         statusText = 'Pending Your Approval';
         break;
       case 'approved':
-        statusColor = Colors.blue;
+        statusColor = Colors.teal.shade600;
         statusText = 'Approved by You';
         break;
       case 'rejected':
-        statusColor = Colors.red;
+        statusColor = Colors.red.shade600;
         statusText = 'Rejected by You';
         break;
       default:
-        statusColor = Colors.grey;
+        statusColor = Colors.grey.shade600;
         statusText = 'Status: ${request.parentStatus.status}';
     }
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () async {
-          if (_token == null || (request.id).isEmpty) return;
-          try {
-            if (!mounted) return;
-            dev.log(
-                '[ParentDashboard] Fetching leave details for id: ${request.id}');
-            dev.log('[ParentDashboard] Using token: $_token');
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) =>
-                  const Center(child: CircularProgressIndicator()),
-            );
-            final leaveService = LeaveService();
-            final rawJson = await leaveService.fetchLeaveById(
-              token: _token!,
-              leaveId: request.id,
-            );
-            dev.log(
-                '[ParentDashboard] API response for leave details: $rawJson');
-            if (!mounted) return;
-            Navigator.pop(context); // Remove loading dialog
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LeaveDetailsScreen(
-                  rawJson: (rawJson.containsKey('leave'))
-                      ? rawJson['leave'] as Map<String, dynamic>
-                      : null,
-                ),
-              ),
-            );
-          } catch (e) {
-            if (mounted) {
-              Navigator.pop(context); // Remove loading dialog if present
-              dev.log('[ParentDashboard] Error fetching leave details: $e');
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Error'),
-                  content:
-                      Text('Failed to fetch leave details.\n${e.toString()}'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: statusColor, width: 6),
+            ),
+          ),
+          child: InkWell(
+            onTap: () async {
+              if (_token == null || (request.id).isEmpty) return;
+              try {
+                if (!mounted) return;
+                dev.log(
+                    '[ParentDashboard] Fetching leave details for id: ${request.id}');
+                dev.log('[ParentDashboard] Using token: $_token');
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
+                );
+                final leaveService = LeaveService();
+                final rawJson = await leaveService.fetchLeaveById(
+                  token: _token!,
+                  leaveId: request.id,
+                );
+                dev.log(
+                    '[ParentDashboard] API response for leave details: $rawJson');
+                if (!mounted) return;
+                Navigator.pop(context); // Remove loading dialog
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LeaveDetailsScreen(
+                      rawJson: (rawJson.containsKey('leave'))
+                          ? rawJson['leave'] as Map<String, dynamic>
+                          : null,
                     ),
-                  ],
-                ),
-              );
-            }
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  ),
+                );
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context); // Remove loading dialog if present
+                  dev.log('[ParentDashboard] Error fetching leave details: $e');
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Could Not Load Details'),
+                      content: Text(friendlyError(e)),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      request.reason,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                          color: statusColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 20),
-              _buildInfoRow(
-                  Icons.person_outline, 'Student: ${request.studentName}'),
-              const SizedBox(height: 4),
-              _buildInfoRow(Icons.calendar_today_outlined,
-                  'From: ${_formatDate(request.startDate)} To: ${_formatDate(request.endDate)}'),
-              const SizedBox(height: 4),
-              _buildInfoRow(Icons.timer_outlined,
-                  'Duration: ${request.endDate.difference(request.startDate).inDays + 1} day(s)'),
-              if (showActionButtons)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Row(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showApprovalDialog(request, true),
-                          icon: const Icon(Icons.check, size: 16),
-                          label: const Text('Approve'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                        child: Text(
+                          request.reason,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showApprovalDialog(request, false),
-                          icon: const Icon(Icons.close, size: 16),
-                          label: const Text('Reject'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: statusColor.withOpacity(0.2), width: 1),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-            ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Batch: ${request.studentBatch}',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildInfoRow(
+                          Icons.person_outline_rounded,
+                          'Student: ${request.studentName}',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInfoRow(
+                          Icons.calendar_today_rounded,
+                          '${_formatDate(request.startDate)} - ${_formatDate(request.endDate)}',
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInfoRow(
+                          Icons.timer_outlined,
+                          '${request.endDate.difference(request.startDate).inDays + 1} day(s)',
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (showActionButtons)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.teal.shade600, Colors.teal.shade500],
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _showApprovalDialog(request, true),
+                                icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                                label: const Text(
+                                  'Approve',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red.shade200),
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _showApprovalDialog(request, false),
+                                icon: Icon(Icons.close_rounded, size: 16, color: Colors.red.shade700),
+                                label: Text(
+                                  'Reject',
+                                  style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -579,27 +743,78 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _buildConcernCard(Map<String, dynamic> concern) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              concern['description'] ?? 'No description provided',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    concern['description'] ?? 'No description provided',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const Divider(height: 20),
+            const Divider(height: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Batch: ${concern['batch']}',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildInfoRow(
+                    Icons.person_outline_rounded,
+                    'Student: ${concern['studentName']}',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             _buildInfoRow(
-                Icons.person_outline, 'Student: ${concern['studentName']}'),
-            const SizedBox(height: 4),
-            _buildInfoRow(Icons.group_outlined, 'Batch: ${concern['batch']}'),
-            const SizedBox(height: 4),
-            _buildInfoRow(Icons.calendar_today_outlined,
-                'Created At: ${_formatDate(DateTime.parse(concern['createdAt']))}'),
+              Icons.calendar_today_rounded,
+              'Created At: ${_formatDate(DateTime.parse(concern['createdAt']))}',
+            ),
           ],
         ),
       ),
@@ -610,27 +825,55 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   Widget _buildStatCard(
       String title, String count, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
+            color: Colors.grey.shade300.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(count,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            count,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -693,39 +936,78 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isApproval ? 'Approve Leave' : 'Reject Leave'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              isApproval ? Icons.check_circle_outline : Icons.cancel_outlined,
+              color: isApproval ? Colors.teal : Colors.red,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isApproval ? 'Approve Leave' : 'Reject Leave',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-                'Are you sure you want to ${isApproval ? 'approve' : 'reject'} this request?'),
+              'Are you sure you want to ${isApproval ? 'approve' : 'reject'} the request for ${request.studentName}?',
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: commentController,
               decoration: InputDecoration(
-                labelText:
-                    isApproval ? 'Comment (Optional)' : 'Reason for rejection',
-                border: const OutlineInputBorder(),
+                labelText: isApproval ? 'Comment (Optional)' : 'Reason for rejection (Required)',
+                labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: isApproval ? Colors.teal : Colors.red, width: 1.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
               ),
               maxLines: 2,
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+            ),
           ),
+          const SizedBox(width: 4),
           ElevatedButton(
             onPressed: () {
+              if (!isApproval && commentController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please provide a reason for rejection.')),
+                );
+                return;
+              }
               _handleApproval(request, isApproval, commentController.text);
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: isApproval ? Colors.green : Colors.red,
+              backgroundColor: isApproval ? Colors.teal : Colors.red,
               foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text(isApproval ? 'Approve' : 'Reject'),
+            child: Text(isApproval ? 'Approve' : 'Reject', style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

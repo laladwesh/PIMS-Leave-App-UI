@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui';
 import 'dart:developer' as dev;
+import '../helpers/error_handler.dart';
 
 class GlassmorphicContainer extends StatelessWidget {
   final Widget child;
@@ -199,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen>
         user = null; // Clear user info
       });
       await FirebaseAuth.instance.signOut().catchError((_) {});
-      await GoogleSignIn().signOut().catchError((_) {});
+      try { await GoogleSignIn().signOut(); } catch (_) {}
       return;
     }
 
@@ -289,13 +290,13 @@ class _LoginScreenState extends State<LoginScreen>
       // On iOS, GoogleSignIn automatically reads the CLIENT_ID from
       // GoogleService-Info.plist. Do NOT pass clientId here — it overrides
       // the plist config and breaks the iOS sign-in flow.
-      final GoogleSignIn _googleSignIn = GoogleSignIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn();
       
       // Clear any hung state from Google Play Services before attempting a new sign-in.
       // This resolves the issue where the app fails to sign in until a device reboot.
-      await _googleSignIn.signOut();
+      await googleSignIn.signOut();
       
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         setState(() => _isLoading = false);
         return; // User cancelled the sign-in
@@ -328,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Sign in failed: ${e.toString()}. Please try again.')),
+            content: Text(friendlyError(e))),
       );
     } finally {
       if (mounted) {
@@ -394,7 +395,7 @@ class _LoginScreenState extends State<LoginScreen>
       await prefs.remove('fcm_token');
     }
     await FirebaseAuth.instance.signOut().catchError((_) {});
-    await GoogleSignIn().signOut().catchError((_) {});
+    try { await GoogleSignIn().signOut(); } catch (_) {}
     await prefs.clear(); // Clear all prefs on logout for safety
     dev.log('User signed out and SharedPreferences cleared');
     setState(() {

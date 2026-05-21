@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'raise_concern_screen.dart';
 import 'dart:developer' as dev;
+import '../helpers/error_handler.dart';
 
 class GuardDashboardScreen extends StatefulWidget {
   const GuardDashboardScreen({super.key});
@@ -129,7 +130,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
       if (mounted) {
         Navigator.pop(context); // Remove loading dialog if present
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to fetch application details: $e')),
+          SnackBar(content: Text(friendlyError(e))),
         );
       }
     }
@@ -142,6 +143,27 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
       id: id,
     );
     _refreshData();
+  }
+
+  /// Shows a friendly "no internet" style error widget (no API URLs exposed).
+  Widget _buildErrorState() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.wifi_off_rounded, size: 56, color: Colors.grey),
+        const SizedBox(height: 12),
+        const Text(
+          'Unable to load data',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Please check your internet connection\nand pull down to refresh.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey),
+        ),
+      ],
+    );
   }
 
   String _formatDateTime(String? isoString) {
@@ -212,7 +234,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(content: Text(friendlyError(e))),
         );
       }
     }
@@ -259,7 +281,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
       _refreshData();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     }
   }
@@ -312,7 +334,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                               child: CircularProgressIndicator());
                         } else if (snapshot.hasError) {
                           return Center(
-                              child: Text('Error: ${snapshot.error}'));
+                              child: _buildErrorState());
                         } else if (snapshot.hasData) {
                           final leaves = snapshot.data!['leaves'] ?? [];
                           // Filtering and sorting directly on the response
@@ -937,7 +959,7 @@ class _GuardDashboardScreenState extends State<GuardDashboardScreen>
                               child: CircularProgressIndicator());
                         } else if (snapshot.hasError) {
                           return Center(
-                              child: Text('Error: ${snapshot.error}'));
+                              child: _buildErrorState());
                         } else if (snapshot.hasData) {
                           final leaves = snapshot.data!['leaves'] ?? [];
                           

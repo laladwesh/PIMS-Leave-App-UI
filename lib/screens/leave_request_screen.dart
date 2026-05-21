@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import '../services/leave_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import '../helpers/error_handler.dart';
 
 class LeaveRequestScreen extends StatefulWidget {
   const LeaveRequestScreen({super.key});
@@ -58,9 +59,17 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Leave request submitted successfully!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.check_circle_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(child: Text('Leave request submitted successfully!')),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       Navigator.of(context).pop(true); // Return true to indicate success
@@ -68,8 +77,16 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text(friendlyError(e))),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     } finally {
@@ -87,14 +104,26 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
       final shouldPop = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Discard Changes?'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+              const SizedBox(width: 10),
+              const Text('Discard Changes?'),
+            ],
+          ),
           content: const Text('Are you sure you want to leave this page? Any unsaved changes will be lost.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade700)),
             ),
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Discard'),
             ),
@@ -117,86 +146,176 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: const Color(0xFFF7F8FA),
         appBar: AppBar(
-          title: const Text('New Leave Request'),
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.indigo.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          foregroundColor: Colors.white,
+          title: const Text('New Leave Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          elevation: 0,
+          centerTitle: true,
         ),
         body: SafeArea(
           child: loading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(color: Colors.blue),
+                      const SizedBox(height: 16),
+                      Text('Submitting request...', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                )
               : Form(
                   key: _formKey,
                   child: ListView(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(20.0),
                     children: [
-                    _buildDateTimePicker(
-                      context: context,
-                      controller: startDateController,
-                      label: 'Start Date & Time',
-                      onDateSelected: (date) {
-                        setState(() {
-                          selectedStartDate = date;
-                          startDateController.text = DateFormat('d MMM yyyy, hh:mm a').format(date);
-                          // Clear end date if it's before the new start date
-                          if (selectedEndDate != null && selectedEndDate!.isBefore(date)) {
-                            selectedEndDate = null;
-                            endDateController.clear();
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDateTimePicker(
-                      context: context,
-                      controller: endDateController,
-                      label: 'End Date & Time',
-                      firstDate: selectedStartDate,
-                      onDateSelected: (date) {
-                        setState(() {
-                          selectedEndDate = date;
-                          endDateController.text = DateFormat('d MMM yyyy, hh:mm a').format(date);
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: reasonController,
-                      decoration: const InputDecoration(
-                        labelText: 'Reason for Leave',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                      // Header Illustration/Info
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.blue.shade500, Colors.indigo.shade600],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(color: Colors.indigo.shade200.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, 4)),
+                          ],
                         ),
-                        prefixIcon: Icon(Icons.edit_note_outlined),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.flight_takeoff_rounded, color: Colors.white, size: 32),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Apply for Leave',
+                                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Fill in the details below to submit your application for approval.',
+                                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      maxLines: 3,
-                      validator: (value) => value == null || value.isEmpty ? 'Reason is required' : null,
-                    ),
-                    const SizedBox(height: 24),
-                    _buildFilePicker(),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: postLeave,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 24),
+
+                      // Dates section
+                      const Text('Schedule', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDateTimePicker(
+                              context: context,
+                              controller: startDateController,
+                              label: 'Departure',
+                              icon: Icons.logout_rounded,
+                              color: Colors.orange.shade600,
+                              onDateSelected: (date) {
+                                setState(() {
+                                  selectedStartDate = date;
+                                  startDateController.text = DateFormat('d MMM yyyy\nhh:mm a').format(date);
+                                  if (selectedEndDate != null && selectedEndDate!.isBefore(date)) {
+                                    selectedEndDate = null;
+                                    endDateController.clear();
+                                  }
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildDateTimePicker(
+                              context: context,
+                              controller: endDateController,
+                              label: 'Return',
+                              icon: Icons.login_rounded,
+                              color: Colors.green.shade600,
+                              firstDate: selectedStartDate,
+                              onDateSelected: (date) {
+                                setState(() {
+                                  selectedEndDate = date;
+                                  endDateController.text = DateFormat('d MMM yyyy\nhh:mm a').format(date);
+                                });
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Text('Submit Request'),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+
+                      // Details Section
+                      const Text('Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                        ),
+                        child: TextFormField(
+                          controller: reasonController,
+                          decoration: InputDecoration(
+                            hintText: 'Provide a clear reason for your leave...',
+                            hintStyle: TextStyle(color: Colors.grey.shade400),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.all(16),
+                          ),
+                          maxLines: 4,
+                          validator: (value) => value == null || value.isEmpty ? 'Reason is required' : null,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Document Section
+                      const Text('Supporting Document', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const SizedBox(height: 12),
+                      _buildFilePicker(),
+                      const SizedBox(height: 32),
+
+                      // Submit Button
+                      ElevatedButton(
+                        onPressed: postLeave,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.send_rounded, size: 20),
+                            SizedBox(width: 8),
+                            Text('Submit Application', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
-              ),
+        ),
       ),
-    ),
     );
   }
 
@@ -204,20 +323,12 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
     required BuildContext context,
     required TextEditingController controller,
     required String label,
+    required IconData icon,
+    required Color color,
     required Function(DateTime) onDateSelected,
     DateTime? firstDate,
   }) {
-    return TextFormField(
-      controller: controller,
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
-        prefixIcon: const Icon(Icons.calendar_today_outlined),
-      ),
-      validator: (value) => value == null || value.isEmpty ? '$label is required' : null,
+    return GestureDetector(
       onTap: () async {
         final pickedDate = await showDatePicker(
           context: context,
@@ -243,49 +354,117 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
           }
         }
       },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200, width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 18),
+                const SizedBox(width: 6),
+                Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: controller,
+              enabled: false, // Disables manual editing but keeps formatting
+              decoration: InputDecoration.collapsed(
+                hintText: 'Select Date',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w500),
+              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+              maxLines: 2,
+              validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildFilePicker() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.attach_file, color: Colors.grey.shade700),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              pickedFile != null ? pickedFile!.path.split('/').last : 'Attach a document (optional)',
-              style: TextStyle(color: pickedFile != null ? Colors.black : Colors.grey.shade700),
-              overflow: TextOverflow.ellipsis,
-            ),
+    final bool hasFile = pickedFile != null;
+    return InkWell(
+      onTap: () async {
+        if (hasFile) return; // Prevent clicking entire box when file exists
+        final result = await FilePicker.platform.pickFiles(type: FileType.any);
+        if (result != null && result.files.single.path != null) {
+          setState(() {
+            pickedFile = File(result.files.single.path!);
+          });
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: hasFile ? Colors.blue.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: hasFile ? Colors.blue.shade200 : Colors.grey.shade200,
+            width: 1.5,
+            style: hasFile ? BorderStyle.solid : BorderStyle.solid,
           ),
-          if (pickedFile != null)
-            IconButton(
-              icon: const Icon(Icons.clear, color: Colors.red),
-              onPressed: () {
-                setState(() {
-                  pickedFile = null;
-                });
-              },
-            )
-          else
-            TextButton(
-              child: const Text('Select'),
-              onPressed: () async {
-                final result = await FilePicker.platform.pickFiles(type: FileType.any);
-                if (result != null && result.files.single.path != null) {
-                  setState(() {
-                    pickedFile = File(result.files.single.path!);
-                  });
-                }
-              },
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: hasFile ? Colors.blue.shade100 : Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                hasFile ? Icons.insert_drive_file_rounded : Icons.upload_file_rounded,
+                color: hasFile ? Colors.blue.shade700 : Colors.grey.shade600,
+              ),
             ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasFile ? pickedFile!.path.split('/').last : 'Upload Document',
+                    style: TextStyle(
+                      color: hasFile ? Colors.blue.shade900 : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hasFile ? 'File attached' : 'Optional attachment (PDF, Image)',
+                    style: TextStyle(
+                      color: hasFile ? Colors.blue.shade700 : Colors.grey.shade500,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (hasFile)
+              IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.red),
+                tooltip: 'Remove document',
+                onPressed: () {
+                  setState(() {
+                    pickedFile = null;
+                  });
+                },
+              )
+            else
+              Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/concern_service.dart';
 import 'dart:developer' as dev;
+import '../helpers/error_handler.dart';
 
 class RaiseConcernScreen extends StatefulWidget {
   const RaiseConcernScreen({super.key});
@@ -59,7 +60,7 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading students: $e')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     }
     setState(() => _loading = false);
@@ -135,7 +136,7 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
     } catch (e) {
       dev.log('[DEBUG] Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error raising concern: $e')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     } finally {
       setState(() => _loading = false);
