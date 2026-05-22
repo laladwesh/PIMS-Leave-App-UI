@@ -71,3 +71,7 @@ ios/Runner/GoogleService-Info.plist
 
 # Generated files
 flutter_export_environment.sh
+
+
+key.properties
+test
